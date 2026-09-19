@@ -1,0 +1,23 @@
+{
+  "project": {
+    "name": "audit-core",
+    "description": "Shared audit mechanism for the gvt-dev and gvt-construct3 convention audits",
+    "languages": ["javascript", "typescript"]
+  },
+  "commands": {
+    "test": "npm test",
+    "lint": "npm run lint",
+    "build": "npm run build",
+    "validate": "npm run lint && npm run typecheck && npm test"
+  },
+  "repo": {
+    "host": "github",
+    "default_branch": "main"
+  },
+  "wiki": {
+    "wikiDir": "wiki",
+    "rawDir": "raw"
+  },
+  "features": {},
+  "paths": {}
+}
