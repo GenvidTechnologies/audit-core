@@ -13,9 +13,13 @@ the context lives at the repo root:
 - [`../README.md`](../README.md) — what the package is, its shape, and how
   consumers import it
 - [`../CLAUDE.md`](../CLAUDE.md) — project context for Claude Code: package
-  shape, commands, CI deviation, commit/PR/branching conventions
+  shape, commands, CI deviation, the release process, and commit/PR/branching
+  conventions
 - [`../CONVENTIONS.md`](../CONVENTIONS.md) — the `gvt-dev` plugin's convention
   contract (canonical copy; resynced by `/gvt-dev:audit-conventions --fix`)
+- [`../CHANGELOG.md`](../CHANGELOG.md) — released versions and what each one
+  contained (Keep a Changelog format; `/gvt-dev:release-npm-package` moves the
+  `[Unreleased]` section into a dated one at release time)
 
 ## Knowledge Base
 

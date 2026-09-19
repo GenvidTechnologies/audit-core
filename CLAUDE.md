@@ -55,6 +55,32 @@ once that merges, the deviation count drops to zero.
 
 Keep that deviation when re-syncing a workflow from its template.
 
+## Releasing
+
+This package publishes to npmjs.com as `@genvidtech/audit-core` via
+`.github/workflows/publish.yml` — the shared `public-github-actions` OIDC
+recipe (trusted publishing, automatic provenance, no stored npm token). **The
+`v*.*.*` tag push is the publish trigger**; pushing `main` alone publishes
+nothing, and there is no manual `npm publish` step. Use
+`/gvt-dev:release-npm-package`.
+
+`0.0.0` on npm is the one-time bootstrap placeholder from the original
+`publish-npm-package` setup, not a real release. The first real release is
+`0.1.0`.
+
+**Tags are lightweight** (`git tag vX.Y.Z`, no `-a`). The two sibling leaf
+repos disagree — `c3source` annotates, `mcp-utils` does not — so there is no
+family convention to inherit; this line is the record of the choice made at
+`v0.1.0`.
+
+**A version bump touches four spots, not three.** Beyond `package.json` and
+the two in `package-lock.json`, `src/index.mjs` carries a hand-written
+`VERSION` constant. `npm version --no-git-tag-version` does **not** update it,
+so a bump that stops at the manifest leaves `VERSION` stale.
+`test/smoke.test.mjs` asserts the two agree, so the mismatch fails `npm test`
+rather than shipping — but fix it in the same commit as the bump, before the
+validate step.
+
 ## Commit Format
 
 Conventional-commit-style subject: `<type>: <imperative summary>`, lowercase
