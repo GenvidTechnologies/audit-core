@@ -17,13 +17,8 @@ subdirectory's own `index.md`. Each entry's description is the linked
 page's frontmatter `description`, so the index and the page can't drift.
 See `docs/wiki-schema.md` for the page format and maintenance rules.
 
-<!-- Example section and entry — replace with your own sections and first
-     real page, or delete once the wiki has at least one page of its own.
-     The `##` heading level below is a local choice — §8 mandates grouping
-     concepts under section headings, not a specific heading depth.
+## Practices
 
-## Example section
-
-* [Example topic](example-topic.md) - one-line description of what this page
-  covers, matching its frontmatter `description`.
--->
+* [Issue triage conventions](issue-triage-conventions.md) - How this repo triages
+  its GitHub issue backlog — the flat category-label set, why the structured
+  taxonomy was rejected, and where the contract and access mechanics live.

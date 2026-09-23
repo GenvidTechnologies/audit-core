@@ -15,15 +15,21 @@ before. If a past entry itself needs correcting, add a new entry that says
 so; never edit or remove the old one in place. See `docs/wiki-schema.md` for
 the full maintenance schema.
 
-<!-- Example — two date groups, newest first, illustrating the ordering.
-     Replace with your first real ingest entry, or delete once the log has
-     one of its own.
+## 2026-09-23
 
-## 2026-08-03
+* **Creation**: issue-triage-conventions.md — the wiki's first real page, driven
+  by `raw/2026-09-23-gvt-dev-4.26.0-issue-triage-flat-template.md` (the plugin's
+  flat-variant template, captured verbatim) and
+  `raw/2026-09-23-audit-core-github-label-set.md` (the nine-label probe that
+  selected the flat variant over the structured one). Records the flat
+  category-label set, the absence of priorities, `question` standing in for
+  `needs-info`, the newly created `triaged` label and its last-write ordering,
+  and why `actionQuery` stays scoped to the whole open backlog.
 
-* **Update**: example-topic.md — added X, driven by `raw/example-source.md`.
-
-## 2026-08-01
-
-* **Creation**: example-topic.md, driven by `raw/example-source.md`.
--->
+  Provenance note: authored during a `/gvt-dev:triage-issues` run — its §0b
+  contract-adoption step, which scaffolded `docs/issue-triage.md` and added the
+  `bugTracker` block — rather than a `/gvt-dev:maintain-wiki ingest`. The page's
+  `generated.by` still reads `process:maintain-wiki` because the schema defines
+  that value as the durable producer contract, not a record of which session
+  wrote the file; this entry is where the actual origin is recorded. The page
+  carries no `verified` key, which is correct: nobody has verified it yet.

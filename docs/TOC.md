@@ -20,6 +20,13 @@ No dedicated `docs/` project page yet — the context lives at the repo root:
   contained (Keep a Changelog format; `/gvt-dev:release-npm-package` moves the
   `[Unreleased]` section into a dated one at release time)
 
+## Process
+
+- [`issue-triage.md`](issue-triage.md) — triage conventions consumed by
+  `/gvt-dev:triage-issues`: the flat category-label set this repo uses, required
+  fields, duplicate/dependency policy, and the `gh` mutation recipes (access
+  mechanics live in the `bugTracker` block of `../.gvt-agent.json`)
+
 ## Knowledge Base
 
 - [`wiki-schema.md`](wiki-schema.md) — maintenance schema for the three-tier
