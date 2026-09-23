@@ -6,10 +6,13 @@ Shared audit mechanism for the `gvt-dev` and `gvt-construct3` convention
 audits. This is a **library, not a CLI** — it declares no `bin` entry and is
 not meant to be invoked with `npx`. Consumers import it as an ES module.
 
-The library implementation has not landed yet; the repository currently holds
-the standup only. The work is tracked in
+The library implementation has landed: `src/` holds the five extracted
+modules (`frontmatter.mjs`, `config-resolve.mjs`, `probes.mjs`,
+`component-walk.mjs`, `evaluate.mjs`) plus the re-export barrel
+`src/index.mjs`, closing
 [GenvidTechnologies/claude-code-plugin-gvt-dev#457](https://github.com/GenvidTechnologies/claude-code-plugin-gvt-dev/issues/457),
-whose seam is pinned by ADR-0057 in that repo.
+whose seam is pinned by ADR-0057 in that repo. `README.md`'s API surface
+section documents the 12-name barrel.
 
 ## Package shape
 
@@ -17,6 +20,11 @@ No-build, plain-`.mjs` ESM. Sources ship as written — there is no TypeScript
 build step and no `dist/`. Types come from a **hand-maintained**
 `src/index.d.ts` alongside the source, so a change to an export's signature
 must be mirrored there by hand; nothing generates it.
+`test/dts-parity.test.mjs` pins the one thing that can be checked
+mechanically — that the set of names declared in `src/index.d.ts` matches the
+set the barrel actually exports at runtime — but it does **not** check
+declared shapes or signatures; drift there is unchecked by anything and
+relies on manual review against the source modules.
 
 This deliberately differs from the sibling leaf libraries
 [`@genvidtech/c3source`](https://github.com/GenvidTechnologies/c3source) and
@@ -24,9 +32,17 @@ This deliberately differs from the sibling leaf libraries
 which are TypeScript packages that build to `dist/`. Don't port their layout
 here (see ADR-0051 in the `gvt-dev` plugin repo).
 
-`yaml` is the only runtime dependency, and there is deliberately **no
-`@genvidtech` dependency of any kind** — this package sits at the bottom of
-the dependency graph.
+**The five `.mjs` modules in `src/` are byte-identical to their `gvt-dev`
+originals, and must stay that way while both copies exist** — that's what
+bounds drift until the plugin itself imports from this package (#458). Don't
+edit them for any reason, including a header comment or a reformat; a change
+that's genuinely needed belongs in the `gvt-dev` plugin first, then gets
+re-extracted here.
+
+`yaml` is a declared dependency but currently **unused** — see "Package
+shape" in `README.md` for why — and there is deliberately **no `@genvidtech`
+dependency of any kind** — this package sits at the bottom of the dependency
+graph.
 
 Node >= 22.
 
