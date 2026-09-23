@@ -9,6 +9,8 @@ While the package is at `0.x`, a breaking change to the public API takes a
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-23
+
 ### Added
 
 - The shared audit mechanism: five modules extracted from the `gvt-dev`
@@ -55,5 +57,6 @@ the original OIDC publishing setup, not a release.
 - The `gvt-dev` convention contract (`CONVENTIONS.md`, `docs/TOC.md`,
   `.gvt-agent.json`) and the scaffolded LLM-wiki under `wiki/`.
 
-[Unreleased]: https://github.com/GenvidTechnologies/audit-core/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/GenvidTechnologies/audit-core/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/GenvidTechnologies/audit-core/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/GenvidTechnologies/audit-core/releases/tag/v0.1.0
