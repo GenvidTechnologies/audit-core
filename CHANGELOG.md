@@ -9,6 +9,29 @@ While the package is at `0.x`, a breaking change to the public API takes a
 
 ## [Unreleased]
 
+### Added
+
+- The shared audit mechanism: five modules extracted from the `gvt-dev`
+  plugin's `audit-conventions` skill — `src/frontmatter.mjs`,
+  `src/config-resolve.mjs`, `src/probes.mjs`, `src/component-walk.mjs`,
+  `src/evaluate.mjs` — the leaf half of
+  [GenvidTechnologies/claude-code-plugin-gvt-dev#457](https://github.com/GenvidTechnologies/claude-code-plugin-gvt-dev/issues/457),
+  against the seam pinned by ADR-0057. The barrel (`src/index.mjs`) now
+  re-exports 12 names in total (`VERSION` plus the 11 functions from the five
+  modules).
+- Matching hand-written declarations for all 12 exports in `src/index.d.ts`.
+- Four new test files (`test/component-walk.test.mjs`,
+  `test/dts-parity.test.mjs`, `test/evaluate.test.mjs`,
+  `test/probes.test.mjs`), bringing the suite to 31 tests. Behaviour is
+  inherited unchanged from the upstream `gvt-dev` extraction — the five
+  modules are byte-identical to their `gvt-dev` originals and must stay that
+  way while both copies exist.
+- `src/frontmatter.mjs` still ships the hand-rolled YAML parser moved
+  verbatim from the plugin; swapping its internals to the already-declared
+  `yaml` dependency is deferred to the plugin's own follow-up work (ADR-0051
+  sequences it as a later step). Consequently `yaml` is currently a declared
+  but unused dependency.
+
 ## [0.1.0] - 2026-09-19
 
 First real release. `0.0.0` on npm is the one-time bootstrap placeholder from

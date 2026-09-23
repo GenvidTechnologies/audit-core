@@ -6,12 +6,11 @@ is invisible to them — index it when you add it.
 
 ## Project context
 
-No dedicated project docs yet. Until the library implementation lands
-(see [#457](https://github.com/GenvidTechnologies/claude-code-plugin-gvt-dev/issues/457)),
-the context lives at the repo root:
+No dedicated `docs/` project page yet — the context lives at the repo root:
 
-- [`../README.md`](../README.md) — what the package is, its shape, and how
-  consumers import it
+- [`../README.md`](../README.md) — what the package is, its shape, the
+  API surface (the 12 exports the barrel re-exports, grouped by module), and
+  how consumers import it
 - [`../CLAUDE.md`](../CLAUDE.md) — project context for Claude Code: package
   shape, commands, CI deviation, the release process, and commit/PR/branching
   conventions
