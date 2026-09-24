@@ -1,6 +1,9 @@
 // Pins that src/index.d.ts declares exactly the names src/index.mjs exports
-// at runtime — the one thing about the hand-maintained .d.ts that CAN be
-// checked mechanically (see the header comment on index.d.ts).
+// at runtime. Independent regex check — runs without `tsc` or `@types/node`,
+// so it survives a toolchain problem that would take the tsc-backed
+// signature typecheck (test/signature.test.mjs, spawned from
+// test/signature-guard.test.mjs) out with it. See CLAUDE.md's "Package
+// shape" section for the full mechanism.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

@@ -20,11 +20,19 @@ No-build, plain-`.mjs` ESM. Sources ship as written — there is no TypeScript
 build step and no `dist/`. Types come from a **hand-maintained**
 `src/index.d.ts` alongside the source, so a change to an export's signature
 must be mirrored there by hand; nothing generates it.
-`test/dts-parity.test.mjs` pins the one thing that can be checked
-mechanically — that the set of names declared in `src/index.d.ts` matches the
-set the barrel actually exports at runtime — but it does **not** check
-declared shapes or signatures; drift there is unchecked by anything and
-relies on manual review against the source modules.
+`test/dts-parity.test.mjs` independently pins name parity — that the set of
+names declared in `src/index.d.ts` matches the set the barrel actually
+exports at runtime — via a regex check that runs without `tsc` or
+`@types/node`, so it survives a toolchain problem that would take the
+`tsc`-backed check below out with it. Declared *shapes* and signatures are
+pinned by `test/signature.test.mjs`, a JSDoc-typed fixture checked by both
+`tsc` (via `tsconfig.signature.json`, spawned from
+`test/signature-guard.test.mjs`, against `src/index.d.ts`) and `node --test`
+(against `src/index.mjs`) — closure is transitive through the one file they
+share, since `tsc` never loads the `.mjs` and the runtime sees no declared
+types. `test/signature-guard.test.mjs` also denies suppression directives
+(`@ts-expect-error`, `@ts-ignore`, `@ts-nocheck`) in the fixture, so the check
+cannot be silently disarmed.
 
 This deliberately differs from the sibling leaf libraries
 [`@genvidtech/c3source`](https://github.com/GenvidTechnologies/c3source) and
@@ -52,7 +60,7 @@ Node >= 22.
 | --- | --- |
 | Lint | `npm run lint` (eslint) |
 | Typecheck | `npm run typecheck` (`tsc --noEmit`, checks the hand-written `.d.ts`) |
-| Test | `npm test` (`node --test`) |
+| Test | `npm test` (`node --test`; includes the `tsc`-backed signature typecheck spawned from `test/signature-guard.test.mjs`) |
 | Build | `npm run build` — a **documented no-op**; it exists only because the shared CI gate runs all four scripts unconditionally |
 | Validate | `npm run lint && npm run typecheck && npm test` |
 
