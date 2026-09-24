@@ -22,7 +22,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -270,6 +270,58 @@ test('evaluateFile and evaluateConfig return the declared 8-key shape for the un
     };
     assert.deepEqual(Object.keys(fileFinding).sort(), Object.keys(UNSATISFIED_KEYS).sort());
     assert.deepEqual(Object.keys(configFinding).sort(), Object.keys(UNSATISFIED_KEYS).sort());
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+// 8. Return type, async form -- fileExists, dirExists, walkComponents, and
+//    loadComponent all declare a Promise<...> return, and none of them had
+//    any return-shape coverage before this block: they were checked only by
+//    the arity assertion and the completeness guard's name list, neither of
+//    which pins a return type. `/** @type {boolean} */ const x = await
+//    fileExists(p)` was MEASURED to not catch a dropped `Promise<>` --
+//    awaiting a non-Promise value is legal TypeScript, so the awaited type
+//    still matches. Binding the unawaited call to a `Promise<T>`-annotated
+//    local first, and only then awaiting into a second annotated local,
+//    forces tsc to check the call's actual return type against `Promise<T>`
+//    before any `await` can paper over the difference.
+test('fileExists, dirExists, walkComponents, and loadComponent return their declared Promise-wrapped types', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'signature-async-'));
+  try {
+    const probeFile = join(dir, 'probe.txt');
+    await writeFile(probeFile, 'probe');
+
+    /** @type {Promise<boolean>} */
+    const fileExistsPromise = audit.fileExists(probeFile);
+    /** @type {boolean} */
+    const fileExistsResult = await fileExistsPromise;
+    assert.equal(fileExistsResult, true);
+
+    /** @type {Promise<boolean>} */
+    const dirExistsPromise = audit.dirExists(dir);
+    /** @type {boolean} */
+    const dirExistsResult = await dirExistsPromise;
+    assert.equal(dirExistsResult, true);
+
+    const skillsDir = join(dir, 'skills', 'sample-skill');
+    await mkdir(skillsDir, { recursive: true });
+    const skillFile = join(skillsDir, 'SKILL.md');
+    await writeFile(skillFile, '---\nname: sample-skill\ndescription: x\n---\nbody\n');
+
+    /** @type {Promise<Component[]>} */
+    const walkPromise = audit.walkComponents(dir);
+    /** @type {Component[]} */
+    const components = await walkPromise;
+    assert.equal(components.length, 1);
+    assert.equal(components[0].name, 'sample-skill');
+
+    /** @type {Promise<Component>} */
+    const loadPromise = audit.loadComponent('skill', 'sample-skill', skillFile);
+    /** @type {Component} */
+    const loaded = await loadPromise;
+    assert.equal(loaded.name, 'sample-skill');
+    assert.equal(loaded.type, 'skill');
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
