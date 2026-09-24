@@ -12,16 +12,25 @@
 // deny-list entries below are matched as plain substrings, never anchored
 // with a trailing word boundary that would miss that case.
 //
-// The `tsc` spawn itself is wired in a later task (F1); this file only
-// guards the fixture's suppression directives and is otherwise inert with
-// respect to type-checking.
+// The `tsc` spawn below is what makes this mechanism load-bearing: until it
+// runs, the typed fixture's annotations are inert to `node --test`, which
+// ignores JSDoc types entirely. `createRequire(...).resolve('typescript/bin/tsc')`
+// throws `ERR_PACKAGE_PATH_NOT_EXPORTED` under typescript@7.0.2, so the shim
+// is resolved as a literal path from the repo root instead, and spawned via
+// `process.execPath` rather than the `.bin/tsc` shell shim -- the shim is not
+// reliably executable this way on Windows, and this must run on both Windows
+// (local) and Ubuntu (CI).
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const SIGNATURE_FIXTURE = fileURLToPath(new URL('./signature.test.mjs', import.meta.url));
+const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url));
+const TSC_PATH = fileURLToPath(new URL('../node_modules/typescript/bin/tsc', import.meta.url));
+const TSCONFIG_PATH = fileURLToPath(new URL('../tsconfig.signature.json', import.meta.url));
 
 // Deny-list of suppression directives. Matched as plain substrings so that
 // `@ts-expect-error` is caught as a PREFIX (see header) -- do not switch this
@@ -82,4 +91,15 @@ test('the suppression-directive scan positively detects all three directives, in
   const hits = findSuppressionDirectives(synthetic);
   assert.equal(hits.length, 3);
   assert.deepEqual(hits.map((h) => h.directive).sort(), [...DENY_LIST].sort());
+});
+
+test('tsc -p tsconfig.signature.json exits 0, typechecking the fixture against src/index.d.ts', () => {
+  assert.ok(existsSync(TSC_PATH), `expected tsc shim at ${TSC_PATH}, but it does not exist`);
+
+  const r = spawnSync(process.execPath, [TSC_PATH, '-p', TSCONFIG_PATH, '--noEmit'], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+
+  assert.equal(r.status, 0, `${r.stdout}${r.stderr}`);
 });
