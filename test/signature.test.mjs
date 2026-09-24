@@ -237,8 +237,14 @@ test('evaluateFile and evaluateConfig return the declared 8-key shape for the un
       return resolution;
     };
 
+    // Bind the UNAWAITED call to a Promise-annotated local first. Awaiting a
+    // non-Promise is legal TypeScript, so annotating only the awaited value
+    // would not pin the declared Promise<> wrapper -- dropping it from
+    // index.d.ts would typecheck clean. See the four async exports above.
+    /** @type {Promise<ExpectationFinding>} */
+    const fileFindingPromise = evaluateFile(component, fileEntry, fileResolve);
     /** @type {ExpectationFinding} */
-    const fileFinding = await evaluateFile(component, fileEntry, fileResolve);
+    const fileFinding = await fileFindingPromise;
     if (fileFinding.ok) throw new Error('expected an unsatisfied finding');
 
     /** @type {ExpectationKind} */
@@ -259,8 +265,10 @@ test('evaluateFile and evaluateConfig return the declared 8-key shape for the un
       return resolution;
     };
 
+    /** @type {Promise<ExpectationFinding>} */
+    const configFindingPromise = evaluateConfig(component, configEntry, configResolve);
     /** @type {ExpectationFinding} */
-    const configFinding = await evaluateConfig(component, configEntry, configResolve);
+    const configFinding = await configFindingPromise;
     if (configFinding.ok) throw new Error('expected an unsatisfied finding');
 
     /** @type {Record<keyof UnsatisfiedExpectation, true>} */
