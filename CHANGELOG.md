@@ -9,6 +9,16 @@ While the package is at `0.x`, a breaking change to the public API takes a
 
 ## [Unreleased]
 
+### Added
+
+- `test/upstream-identity.test.mjs`, enforcing that the five extracted
+  modules in `src/` stay byte-identical to their `gvt-dev` originals: a
+  worktree/index check against a committed `RECORD` of git blob SHAs, plus a
+  `RECORD`-vs-upstream-at-a-pinned-commit check over
+  raw.githubusercontent.com that skips (with a named reason) only when the
+  upstream fetch is unreachable
+  ([GenvidTechnologies/audit-core#8](https://github.com/GenvidTechnologies/audit-core/issues/8)).
+
 ## [0.2.0] - 2026-09-23
 
 ### Added
