@@ -158,9 +158,28 @@ Choose `stale_after` by the topic's own volatility, not a fixed default:
   gets a `stale_after` a year out, or omits the key entirely if it's expected
   to stay true indefinitely.
 
-<!-- TODO: describe this project's own stale_after judgment rule, e.g.:
-"Pages about in-flight tooling get stale_after 3-6 months out; pages about
-settled architecture omit stale_after or set it a year out." -->
+**This project's rule**, generalized from the first two pages rather than
+chosen up front:
+
+- A page about a **practice or contract that a plugin release can change** —
+  conventions consumed by a `gvt-dev` skill, a tool's flags, a config block's
+  shape — gets **~6 months**. `issue-triage-conventions.md` is the example: it
+  describes a template variant and label vocabulary that an upstream plugin
+  release can revise underneath us, and nothing here would notice.
+- A page recording a **mechanism decision this repo owns** — why a design was
+  chosen over the alternatives weighed at the time — gets **~1 year**.
+  `signature-check-mechanism.md` is the example: the rejected options and the
+  measurements behind them stay true even if the mechanism is later replaced,
+  because the page is a record of a decision, not a description of current
+  behaviour.
+- A page describing something **pinned by an upstream ADR** may omit
+  `stale_after` entirely; the ADR is the thing that would change, and it has
+  its own review.
+
+The discriminator is **who can invalidate the page without telling us**. An
+upstream release can; a decision we made cannot. Where both apply, take the
+shorter date — a stale page that reads as current is worse than one flagged
+early.
 
 ## The verb contract
 
