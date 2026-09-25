@@ -11,7 +11,7 @@
 // -- no tally, no rendered Markdown -- and that silence is a contract property
 // rather than an omission.
 
-export const VERSION = '0.2.0';
+export const VERSION = '0.2.1';
 
 export { extractFrontmatter, parseYaml } from './frontmatter.mjs';
 export { resolveKey } from './config-resolve.mjs';

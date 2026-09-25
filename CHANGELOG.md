@@ -9,6 +9,8 @@ While the package is at `0.x`, a breaking change to the public API takes a
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-09-25
+
 ### Added
 
 - `test/upstream-identity.test.mjs`, enforcing that the five extracted

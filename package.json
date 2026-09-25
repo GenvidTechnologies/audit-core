@@ -1,6 +1,6 @@
 {
   "name": "@genvidtech/audit-core",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Shared audit mechanism for the gvt-dev and gvt-construct3 convention audits",
   "type": "module",
   "main": "./src/index.mjs",
