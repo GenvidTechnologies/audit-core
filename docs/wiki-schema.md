@@ -135,6 +135,10 @@ was when captured.
   date or revision), leaving the prior capture in place. The wiki page that
   cites it gets updated (see above); the old capture stays as the record of
   what was true when it was captured.
+- **Cite durable sources only.** A capture may point at commits, URLs, issue
+  numbers, and in-repo paths, never at a session-local path (a scratchpad or
+  temp directory): that file is gone once the session ends, so the pointer
+  can't be followed. Transcribe the content into the capture instead.
 - This is what makes `<wikiDir>/` pages re-verifiable: every claim traces back to
   an immutable file, not a source that may have moved on since.
 
