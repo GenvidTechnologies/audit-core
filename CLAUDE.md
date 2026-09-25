@@ -45,7 +45,14 @@ originals, and must stay that way while both copies exist** — that's what
 bounds drift until the plugin itself imports from this package (#458). Don't
 edit them for any reason, including a header comment or a reformat; a change
 that's genuinely needed belongs in the `gvt-dev` plugin first, then gets
-re-extracted here.
+re-extracted here. `test/upstream-identity.test.mjs` enforces this in two
+tiers: `src/` worktree and index vs. a committed `RECORD` of git blob SHAs
+(offline, never skips), and `RECORD` vs. gvt-dev at a pinned commit (`PIN`,
+the PR #551 merge) fetched from raw.githubusercontent.com (skips with a named
+reason when unreachable). A legitimate re-extraction bumps `PIN` and `RECORD`
+in the same commit as the copy. It retires itself (skips) once
+GenvidTechnologies/claude-code-plugin-gvt-dev#458 closes as completed, at
+which point the test and this frozen-module rule are deleted.
 
 `yaml` is a declared dependency but currently **unused** — see "Package
 shape" in `README.md` for why — and there is deliberately **no `@genvidtech`
