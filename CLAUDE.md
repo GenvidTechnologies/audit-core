@@ -59,7 +59,7 @@ Node >= 22.
 | Task | Command |
 | --- | --- |
 | Lint | `npm run lint` (eslint) |
-| Typecheck | `npm run typecheck` (`tsc --noEmit`, checks the hand-written `.d.ts`) |
+| Typecheck | `npm run typecheck` (`tsc --noEmit`, checks the hand-written `.d.ts`) — the root `tsconfig.json` is `include: ["src"]` with `checkJs: false`, so this does **not** cover `test/signature.test.mjs`; signature drift is caught by `npm test`, not here |
 | Test | `npm test` (`node --test`; includes the `tsc`-backed signature typecheck spawned from `test/signature-guard.test.mjs`) |
 | Build | `npm run build` — a **documented no-op**; it exists only because the shared CI gate runs all four scripts unconditionally |
 | Validate | `npm run lint && npm run typecheck && npm test` |
