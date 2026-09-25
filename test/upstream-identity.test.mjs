@@ -248,6 +248,188 @@ function decideRetirement({ issue, mainProbe }) {
   };
 }
 
+// RECORD's keys, in RECORD's own declaration order -- reused as the
+// canonical module list for both the local git reads and the upstream
+// fetch below, so a single order (and a single place to change it) drives
+// every zip/parse in this file.
+const MODULE_NAMES = Object.keys(RECORD);
+
+/**
+ * Read the five frozen modules' current digests from the working tree and
+ * the index, one `git` invocation each.
+ *
+ * `git hash-object` is spawned once with all five paths as positional
+ * arguments -- its stdout is one line per path, IN ARGUMENT ORDER, so the
+ * worktree digests are zipped positionally against `names`.
+ *
+ * `git ls-files -s` is also spawned once with the same five paths -- but
+ * its stdout is SORTED BY PATH, not argument order (that's git's own
+ * documented behavior for `ls-files`), so the index digests are instead
+ * parsed by reading each line's own path column into a name->sha map.
+ * Mixing the two parsing strategies up (zipping ls-files positionally, or
+ * sorting hash-object's output) would silently mis-attribute a digest to
+ * the wrong module the moment the five names don't sort the way RECORD
+ * declares them.
+ *
+ * A `git` binary that can't be spawned at all (ENOENT / spawn error) is a
+ * harness problem, not a finding -- it throws for both commands. A
+ * non-zero `ls-files` exit (e.g. no work tree) is not fatal: the worktree
+ * half is still meaningful, so only the index half is reported as skipped.
+ *
+ * @param {string[]} names RECORD's keys, e.g. ['frontmatter.mjs', ...]
+ * @returns {{ worktree: Record<string, string>, index: Record<string, string> | null, indexSkipReason: string | null }}
+ */
+function readLocalDigests(names) {
+  const paths = names.map((name) => `src/${name}`);
+
+  const hashObject = spawnSync('git', ['hash-object', '--', ...paths], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+  if (hashObject.error) {
+    throw new Error(`git hash-object could not be spawned: ${hashObject.error.message}`);
+  }
+  if (hashObject.status !== 0) {
+    throw new Error(`git hash-object exited ${hashObject.status}: ${hashObject.stderr}`);
+  }
+  const worktreeShas = hashObject.stdout.trim().split('\n');
+  const worktree = {};
+  names.forEach((name, i) => {
+    worktree[name] = worktreeShas[i];
+  });
+
+  const lsFiles = spawnSync('git', ['ls-files', '-s', '--', ...paths], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+  if (lsFiles.error) {
+    throw new Error(`git ls-files could not be spawned: ${lsFiles.error.message}`);
+  }
+  if (lsFiles.status !== 0) {
+    return {
+      worktree,
+      index: null,
+      indexSkipReason: `git ls-files exited ${lsFiles.status}: ${lsFiles.stderr.trim()}`,
+    };
+  }
+
+  // git ls-files -s stdout: "<mode> <sha> <stage>\t<path>", SORTED BY PATH
+  // -- parse each line's own path column rather than zipping positionally.
+  const index = {};
+  for (const line of lsFiles.stdout.trim().split('\n')) {
+    if (!line) continue;
+    const [meta, path] = line.split('\t');
+    const sha = meta.trim().split(/\s+/)[1];
+    const name = path.slice('src/'.length);
+    index[name] = sha;
+  }
+
+  return { worktree, index, indexSkipReason: null };
+}
+
+/**
+ * Drain a fetch Response's body when its content is never going to be
+ * read, so an unread stream doesn't keep the process's event loop alive.
+ * Safe to call on a Response with no body (e.g. a HEAD response).
+ * @param {Response} res
+ */
+async function drain(res) {
+  try {
+    await res.body?.cancel();
+  } catch {
+    // Nothing to do with a body that's already closed or errored -- the
+    // point is only to make sure it's not left open.
+  }
+}
+
+/**
+ * The retirement probe: GET gvt-dev#458's issue state, and only when it's
+ * closed+completed, follow up with a HEAD probe of gvt-dev's main-branch
+ * frontmatter.mjs to tell decideRetirement()'s outcome 'a' from outcome
+ * 'b' apart. Started once at module load (see `retirementPromise` below)
+ * so T-c and T-d await the same in-flight probe rather than each firing
+ * their own. Never rejects -- every failure becomes the Error/null that
+ * decideRetirement() already knows how to treat as unreadable.
+ * @returns {Promise<ReturnType<typeof decideRetirement>>}
+ */
+async function probeRetirement() {
+  let issue;
+  try {
+    const res = await fetch(`https://api.github.com/repos/${UPSTREAM_REPO}/issues/458`, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'audit-core-upstream-identity-test',
+      },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (res.status === 200) {
+      const body = await res.json();
+      issue = { state: body.state, state_reason: body.state_reason };
+    } else {
+      await drain(res);
+      issue = new Error(`HTTP ${res.status} fetching gvt-dev#458`);
+    }
+  } catch (err) {
+    issue = err;
+  }
+
+  let mainProbe = null;
+  if (!(issue instanceof Error) && issue != null && issue.state === 'closed' && issue.state_reason === 'completed') {
+    try {
+      const res = await fetch(upstreamUrl('frontmatter.mjs', 'main'), {
+        method: 'HEAD',
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+      mainProbe = res.status;
+      await drain(res);
+    } catch (err) {
+      mainProbe = err;
+    }
+  }
+
+  return decideRetirement({ issue, mainProbe });
+}
+
+// Started once at module load, in parallel with `upstreamPromise` below, so
+// both tiers await already-in-flight work rather than each firing their own
+// requests. Guarded with a trailing .catch() so a bug in probeRetirement()
+// itself (rather than a probe it makes) still resolves rather than leaving
+// this promise to reject unhandled.
+const retirementPromise = probeRetirement().catch((err) =>
+  decideRetirement({ issue: err instanceof Error ? err : new Error(String(err)), mainProbe: null }),
+);
+
+/**
+ * Fetch each of the five modules from gvt-dev at PIN, in parallel. Never
+ * rejects: every module's own fetch resolves to either `{ name, sha }` (a
+ * resolved 200 text/plain response, digested with blobSha()) or
+ * `{ name, unresolved: reason }` (classifyFailure()'s reason, read off
+ * either the response or the thrown fetch error).
+ * @param {string[]} names
+ * @returns {Promise<Array<{ name: string, sha: string } | { name: string, unresolved: string }>>}
+ */
+async function fetchUpstream(names) {
+  return Promise.all(
+    names.map(async (name) => {
+      try {
+        const res = await fetch(upstreamUrl(name), { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+        const reason = classifyFailure(res);
+        if (reason) {
+          await drain(res);
+          return { name, unresolved: reason };
+        }
+        const bytes = new Uint8Array(await res.arrayBuffer());
+        return { name, sha: blobSha(bytes) };
+      } catch (err) {
+        return { name, unresolved: classifyFailure(err) };
+      }
+    }),
+  );
+}
+
+// Started once at module load, in parallel with `retirementPromise` above.
+const upstreamPromise = fetchUpstream(MODULE_NAMES);
+
 test('T-a: PIN, RECORD, and upstreamUrl() have the expected shape', () => {
   assert.match(PIN, /^[0-9a-f]{40}$/);
 
@@ -386,4 +568,69 @@ test('T-f: decideRetirement() covers every issue-state / mainProbe combination',
   });
   assert.equal(unreadableProbe.retired, true);
   assert.equal(unreadableProbe.outcome, 'b');
+});
+
+test('T-c: src/ worktree and index match RECORD (tier 1, offline)', async (t) => {
+  const retirement = await retirementPromise;
+  if (retirement.retired) {
+    t.skip(retirement.reason);
+    return;
+  }
+
+  const { worktree, index, indexSkipReason } = readLocalDigests(MODULE_NAMES);
+  if (indexSkipReason) {
+    t.diagnostic(`index comparison skipped: ${indexSkipReason}`);
+  }
+
+  const mismatches = [];
+  for (const name of MODULE_NAMES) {
+    const expected = RECORD[name];
+    if (worktree[name] !== expected) {
+      mismatches.push(`${name} (worktree ${worktree[name]} != recorded ${expected})`);
+    }
+    if (index && index[name] !== expected) {
+      mismatches.push(`${name} (index ${index[name]} != recorded ${expected})`);
+    }
+  }
+
+  assert.equal(
+    mismatches.length,
+    0,
+    `${mismatches.join(', ')} -- src/ is frozen — revert; or, if re-extracting from gvt-dev, bump PIN and RECORD in this commit`,
+  );
+});
+
+test('T-d: RECORD matches gvt-dev at PIN (tier 2, network)', async (t) => {
+  const retirement = await retirementPromise;
+  if (retirement.retired) {
+    t.skip(retirement.reason);
+    return;
+  }
+
+  const results = await upstreamPromise;
+
+  const diverged = [];
+  const unresolved = [];
+  for (const result of results) {
+    if ('unresolved' in result) {
+      unresolved.push(`${result.name}: ${result.unresolved}`);
+      continue;
+    }
+    if (result.sha !== RECORD[result.name]) {
+      diverged.push(
+        `${result.name} (upstream@${PIN.slice(0, 7)} ${result.sha} != recorded ${RECORD[result.name]})`,
+      );
+    }
+  }
+
+  if (diverged.length > 0) {
+    const suffix = unresolved.length > 0 ? ` -- also unresolved: ${unresolved.join(', ')}` : '';
+    assert.fail(`${diverged.join(', ')}${suffix}`);
+    return;
+  }
+
+  if (unresolved.length > 0) {
+    t.skip(`reference unresolvable: ${unresolved.join(', ')}`);
+    return;
+  }
 });
