@@ -15,6 +15,32 @@ before. If a past entry itself needs correcting, add a new entry that says
 so; never edit or remove the old one in place. See `docs/wiki-schema.md` for
 the full maintenance schema.
 
+## 2026-09-25
+
+* **Creation**: upstream-identity-check.md — a decision-context page recording
+  why audit-core#8's `src/` byte-identity check pins gvt-dev at a specific
+  commit (PR #551's merge, not live `main`, since gvt-dev's upstream-first
+  flow means `main` legitimately runs ahead) rather than comparing against
+  the published npm package (a different property: "unchanged since our own
+  last release", not "matches the gvt-dev original") or gvt-dev's live tree
+  directly, driven by
+  `raw/2026-09-25-upstream-identity-probes.md`. Corrects the issue's own
+  "What changed to make this cheap" premise: the `@genvidtech/audit-core`
+  package gvt-dev 4.28.0 installs is this repo's own published copy, not the
+  gvt-dev original. Records the committed-RECORD two-tier design (blob SHA
+  over sha256, justified by a measured CRLF control; worktree+index over
+  worktree-only, justified by a measured staged-index blind spot), the two
+  rejected reference-source options (network-only; the contents API, which
+  shares its 60/hour unauthenticated budget with the retirement probe), the
+  retirement design keyed off gvt-dev#458's issue state with two outcomes,
+  and the two rejected retirement signals (404-at-main used alone; a
+  documentation-only trigger).
+
+  Authored during a `/gvt-dev:plan-task` run (Phase 4), not a
+  `maintain-wiki ingest`. As with the sibling pages, `generated.by` names
+  the durable producer contract rather than the session; no `verified` key,
+  since nobody has checked it.
+
 ## 2026-09-24
 
 * **Creation**: signature-check-mechanism.md — a decision-context page

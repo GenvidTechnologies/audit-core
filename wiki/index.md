@@ -28,3 +28,8 @@ See `docs/wiki-schema.md` for the page format and maintenance rules.
 * [Signature-check mechanism](signature-check-mechanism.md) - Why the .d.ts/.mjs
   signature check is one dual-consumed pivot fixture rather than two files or a
   hand-rolled AST comparator, and what each rejected option could not do.
+
+* [Upstream-identity check](upstream-identity-check.md) - Why the src/ byte-identity
+  check against gvt-dev pins a specific commit and layers a committed RECORD over a
+  live fetch, rather than comparing against gvt-dev's main or the published npm
+  package, and how it retires itself.
