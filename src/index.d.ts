@@ -6,10 +6,8 @@
 // against index.mjs. Keeping the two in sync is a manual obligation on every
 // change to the barrel's export list or to a returned shape.
 //
-// test/dts-parity.test.mjs pins the one thing that CAN be checked
-// mechanically: that the set of names declared here matches the set of names
-// the barrel actually exports at runtime. It does not check the declared
-// *shapes* — those still rely on manual review against the source modules.
+// See CLAUDE.md's "Package shape" section for what mechanically checks this
+// file's declared names and shapes against src/index.mjs.
 
 export declare const VERSION: string;
 

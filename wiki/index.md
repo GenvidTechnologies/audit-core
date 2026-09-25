@@ -22,3 +22,9 @@ See `docs/wiki-schema.md` for the page format and maintenance rules.
 * [Issue triage conventions](issue-triage-conventions.md) - How this repo triages
   its GitHub issue backlog — the flat category-label set, why the structured
   taxonomy was rejected, and where the contract and access mechanics live.
+
+## Decisions
+
+* [Signature-check mechanism](signature-check-mechanism.md) - Why the .d.ts/.mjs
+  signature check is one dual-consumed pivot fixture rather than two files or a
+  hand-rolled AST comparator, and what each rejected option could not do.
