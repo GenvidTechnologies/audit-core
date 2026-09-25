@@ -96,9 +96,8 @@ would still carry.
 
 ## Orchestrator controls (post-implementation, against commit d1b45f1)
 
-Full captured JSON:
-`C:\Users\FABIEN~1\AppData\Local\Temp\claude\C--repos-audit-core\55d12f6a-4d46-467d-ba42-b0f30977dbbd\scratchpad\controls.json`.
-Every control below was reverted with
+Results below are transcribed from a session-local run log that was not
+kept; this capture is the durable record. Every control below was reverted with
 `git reset -q -- src/ test/ && git checkout -- src/ test/`, confirmed by an
 empty `git status --porcelain -- src/ test/` afterward, and the file re-run
 green.

@@ -67,7 +67,7 @@ Node >= 22.
 | --- | --- |
 | Lint | `npm run lint` (eslint) |
 | Typecheck | `npm run typecheck` (`tsc --noEmit`, checks the hand-written `.d.ts`) — the root `tsconfig.json` is `include: ["src"]` with `checkJs: false`, so this does **not** cover `test/signature.test.mjs`; signature drift is caught by `npm test`, not here |
-| Test | `npm test` (`node --test`; includes the `tsc`-backed signature typecheck spawned from `test/signature-guard.test.mjs`) |
+| Test | `npm test` (`node --test`; includes the `tsc`-backed signature typecheck spawned from `test/signature-guard.test.mjs`). Not fully offline: `test/upstream-identity.test.mjs` fetches from `raw.githubusercontent.com` and reads gvt-dev#458 from `api.github.com` (unauthenticated, 60 requests/hour). Offline or rate-limited, its upstream tier skips with a named reason and the run still exits 0; only a real divergence fails |
 | Build | `npm run build` — a **documented no-op**; it exists only because the shared CI gate runs all four scripts unconditionally |
 | Validate | `npm run lint && npm run typecheck && npm test` |
 
