@@ -27,5 +27,8 @@
     "rawDir": "raw"
   },
   "features": {},
-  "paths": {}
+  "paths": {
+    "docs/TOC.md": "wiki/index.md",
+    "docs/issue-triage.md": "wiki/process/issue-triage.md"
+  }
 }
