@@ -1,6 +1,16 @@
+---
+type: convention
+title: 'Issue Triage Conventions'
+description: 'The flat category-label set, required fields, split, duplicate and dependency policy, and the gh mutation recipes for triaging this repo.'
+tags: [process, triage]
+status: stable
+---
 # Issue Triage Conventions
 
-> Project conventions consumed by `/gvt-dev:triage-issues`. The companion
+> Project conventions consumed by `/gvt-dev:triage-issues`. This repo keeps
+> them in its wiki bundle at `wiki/process/issue-triage.md`, resolved through
+> `paths['docs/issue-triage.md']` in `.gvt-agent.json`; with no override the
+> skill reads `docs/issue-triage.md`. The companion
 > **access mechanics** (fetch queries, label names) live in the `bugTracker`
 > block of `.gvt-agent.json`.
 >

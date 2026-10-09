@@ -1,10 +1,18 @@
+---
+type: convention
+title: 'Wiki Maintenance Schema'
+description: 'The maintenance rules for this wiki — page format and types, create-vs-update lifecycle, raw/ immutability, staleness policy, verb contract and wiki-links.'
+tags: [maintain-wiki, okf]
+status: stable
+---
 # Wiki Maintenance Schema
 
-> Project conventions consumed by `/gvt-dev:maintain-wiki`. Copy this file to
-> `docs/wiki-schema.md` and edit it for your project. This is the **maintenance
-> schema** for the three-tier wiki: `raw/` (immutable captured sources) →
-> `<wikiDir>/` (LLM-maintained pages, `index.md`, `log.md`) → this schema (the rules
-> that govern how the first two are kept in sync).
+> Project conventions consumed by `/gvt-dev:maintain-wiki`. This repo keeps
+> them inside the bundle at `wiki/schema.md`, the skill's default schema
+> location. This is the **maintenance schema** for the three-tier wiki:
+> `raw/` (immutable captured sources) → `<wikiDir>/` (LLM-maintained pages,
+> `index.md`, `log.md`) → this schema (the rules that govern how the first
+> two are kept in sync).
 >
 > The section headings must stay the same — the skill locates guidance by
 > heading. Edit the prose under each heading, not the heading itself.
@@ -58,8 +66,15 @@ fits. A claim drawn from a source carries a footnote keyed to that source's
 - **`type`** — the only always-required key (§4.1); must be non-empty
   (§11.2). Starter vocabulary shipped here — extend or replace it freely for
   your project: `practice-note`, `reference`, `decision-context`, `incident`.
+  This repo adds `convention`, for a contract document that a skill reads by
+  heading: this schema, and `process/issue-triage.md`.
   §11 forbids a consumer rejecting an unknown `type` value, so an open-but-recommended
   set is both routable and conformant.
+
+  Not every page is ingested from a `raw/` capture. A page **migrated** into
+  the bundle from elsewhere in the repo carries only `type`, `title`,
+  `description`, `tags` and `status`: it has no capture to cite in
+  `sources`, and no ingest run to record in `generated`.
 - **`title`, `description`, `tags`** — recommended keys (§4.1). `description`
   is the one-line summary surfaced in `<wikiDir>/index.md` entries and query
   results — keep it accurate and current even when the body grows.
@@ -218,13 +233,16 @@ forms are legal (§6.1):
 - **Ordinary relative** — `./other-page.md` for a sibling page in the same
   directory, `../<subdir>/other-page.md` for a page in another subdirectory.
 
-A link that escapes the bundle root entirely — e.g. to `../docs/wiki-schema.md`
-or `../docs/decisions/0001-*.md` — remains legal per §6.1 as an ordinary
-relative link, but it is **unresolvable to an external OKF consumer** that
-only receives the `<wikiDir>/` bundle on its own. Treat this as a deliberate,
-documented trade-off for the rare page that genuinely needs to point outside
-the bundle (e.g. to this schema doc or an ADR) — not as a pattern to reach
-for by default.
+A link that escapes the bundle root entirely — e.g. to `../README.md` or
+`../CLAUDE.md` — remains legal per §6.1 as an ordinary relative link, but it
+is **unresolvable to an external OKF consumer** that only receives the
+`<wikiDir>/` bundle on its own. Treat this as a deliberate, documented
+trade-off for the rare page that genuinely needs to point outside the bundle
+— not as a pattern to reach for by default. In this repo the only such links
+are the four "Project context" rows in `index.md`, which also serves as the
+repo's documentation index (`paths['docs/TOC.md']`) and so must reach the
+repo-root `README.md`, `CLAUDE.md`, `CONVENTIONS.md` and `CHANGELOG.md`.
+No concept page needs one.
 
 Consumers **must tolerate broken links** (§6.1): a link whose target doesn't
 exist yet is not malformed — it may simply be knowledge not yet written.

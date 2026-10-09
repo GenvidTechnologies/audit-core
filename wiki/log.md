@@ -12,8 +12,31 @@ means a new entry (and, if today isn't already the top group, a new
 insertion point moves from the bottom to the top, but prepending never
 touches a prior entry's text, so the append-only guarantee holds exactly as
 before. If a past entry itself needs correcting, add a new entry that says
-so; never edit or remove the old one in place. See `docs/wiki-schema.md` for
+so; never edit or remove the old one in place. See `wiki/schema.md` for
 the full maintenance schema.
+
+## 2026-10-08
+
+* **Migration**: Moved the last two files under `docs/` into the bundle,
+  following the upstream gvt-dev chain
+  (GenvidTechnologies/claude-code-plugin-gvt-dev#579, its #585 and #587).
+  `docs/issue-triage.md` became `process/issue-triage.md`, a `convention`
+  page listed from the new `process/index.md`, and `.gvt-agent.json` gained
+  the `paths['docs/issue-triage.md']` override that `triage-issues` resolves
+  it through. `docs/wiki-schema.md` became `schema.md`, a `convention` page
+  listed first under `## Schema`, which `maintain-wiki` finds at its default
+  location without an override. Both bodies are unchanged below the new
+  frontmatter except for their preambles and the schema's type vocabulary,
+  migrated-page note and out-of-bundle example. `issue-triage-conventions.md`
+  is repointed at both new paths, and its one out-of-bundle link is now
+  in-bundle. `docs/TOC.md` is folded into `index.md` (new `## Project
+  context` section, plus its note on upstream ADRs under `## Decisions`)
+  and removed; `.gvt-agent.json` maps `paths['docs/TOC.md']` here, so there
+  is one index to maintain rather than two, and `docs/` no longer exists.
+  The four Project-context links are the bundle's only out-of-bundle links,
+  a trade-off the schema now records. `raw/README.md` still names `docs/wiki-schema.md` and is left
+  as is, because `raw/` is never edited in place. Not an ingest; no `raw/`
+  source drove it.
 
 ## 2026-09-25
 

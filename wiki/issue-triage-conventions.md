@@ -31,7 +31,9 @@ sources:
 This repo's issue backlog is triaged by `/gvt-dev:triage-issues`. Two files
 carry the configuration, and they split along a deliberate line: **conventions**
 (what the labels mean, when to split, how duplicates are handled) live in
-`docs/issue-triage.md`, while **access mechanics** (fetch queries, label names,
+[`process/issue-triage.md`](process/issue-triage.md) (moved there from
+`docs/issue-triage.md`, and found by the skill through the
+`paths['docs/issue-triage.md']` override), while **access mechanics** (fetch queries, label names,
 the CLI) live in the `bugTracker` block of `.gvt-agent.json`.
 
 ## The flat variant, and why
@@ -91,15 +93,14 @@ name for this block.
 - **Dependencies are comments, not fields.** `Blocked by #<id>` on the blocked
   issue, optionally `Blocks #<id>` on the other.
 - **Headings are an interface.** The skill and the `issue-triage-analyst` agent
-  locate guidance by heading in `docs/issue-triage.md`. Edit the prose under a
-  heading; never rename or drop the heading itself.
+  locate guidance by heading in `process/issue-triage.md`. Edit the prose under
+  a heading; never rename or drop the heading itself.
 
 ## Related
 
-- [Wiki maintenance schema](../docs/wiki-schema.md) — the page format this page
-  follows. Note this link escapes the bundle root and so is unresolvable to an
-  external OKF consumer receiving `wiki/` alone; that trade-off is documented
-  in the schema's own wiki-links section.
+- [Issue Triage Conventions](process/issue-triage.md) — the contract itself,
+  which this page explains the reasoning behind.
+- [Wiki maintenance schema](schema.md) — the page format this page follows.
 
 [^flat-template]: gvt-dev v4.26.0 flat-variant issue-triage template.
 [^label-set]: audit-core GitHub label set, probed 2026-09-23.
