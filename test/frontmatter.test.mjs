@@ -1,5 +1,6 @@
 // Ported from gvt-dev plugin/skills/audit-conventions/scripts/test/frontmatter.test.mjs
-// at commit 098121e, for GenvidTechnologies/audit-core#13.
+// at commit 098121e, for GenvidTechnologies/audit-core#13. It imports through
+// the barrel, not ../src/frontmatter.mjs, on purpose: it pins the public surface.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
