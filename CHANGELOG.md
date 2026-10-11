@@ -9,6 +9,13 @@ While the package is at `0.x`, a breaking change to the public API takes a
 
 ## [Unreleased]
 
+### Added
+
+- `test/frontmatter.test.mjs` and `test/config-resolve.test.mjs`, ported from
+  `gvt-dev` so the behaviour of the `frontmatter` and `config-resolve` modules
+  is pinned in this repo's own CI
+  ([GenvidTechnologies/audit-core#13](https://github.com/GenvidTechnologies/audit-core/issues/13)).
+
 ## [0.2.1] - 2026-09-25
 
 ### Added
