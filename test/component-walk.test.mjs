@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { promises } from 'node:fs';
 import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
@@ -111,6 +112,81 @@ test('loadComponent: a file with no frontmatter yields {expects: null, frontmatt
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+});
+
+const MASKED = '<masked>';
+
+function maskMessage(r) {
+  return { ...r, readError: { ...r.readError, message: MASKED } };
+}
+
+test('loadComponent: a missing file resolves to an UnreadableComponent with readError.code ENOENT', async () => {
+  const dir = await withTempRepo(async () => {});
+  try {
+    const r = await loadComponent('skill', 'ghost', join(dir, 'never-created.md'));
+    assert.deepEqual(maskMessage(r), {
+      type: 'skill',
+      name: 'ghost',
+      expects: null,
+      frontmatter: null,
+      readError: { code: 'ENOENT', message: MASKED },
+    });
+    assert.equal(typeof r.readError.message, 'string');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('loadComponent: a directory path resolves to an UnreadableComponent with readError.code EISDIR', async () => {
+  const dir = await withTempRepo(async () => {});
+  try {
+    const r = await loadComponent('skill', 'adir', dir);
+    assert.deepEqual(maskMessage(r), {
+      type: 'skill',
+      name: 'adir',
+      expects: null,
+      frontmatter: null,
+      readError: { code: 'EISDIR', message: MASKED },
+    });
+    assert.equal(typeof r.readError.message, 'string');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('walkComponents: an unreadable component is passed through with readError instead of failing the walk', async (t) => {
+  const dir = await withTempRepo(async (d) => {
+    await writeRepoFile(d, 'skills/s1/SKILL.md', '---\nname: s1\ndescription: x\n---\nbody\n');
+    await writeRepoFile(d, 'agents/a1.md', '---\nname: a1\ndescription: x\n---\nbody\n');
+  });
+  try {
+    const a1Path = join(dir, 'agents', 'a1.md');
+    const original = promises.readFile;
+    // The mock reaches component-walk.mjs only because it calls
+    // `fs.readFile` through the promises object. A switch to a named
+    // `readFile` import would bypass it, and this test would then fail loudly.
+    const readFileMock = t.mock.method(promises, 'readFile', async (path, ...rest) => {
+      if (path === a1Path) {
+        const err = new Error('resource busy or locked');
+        err.code = 'EBUSY';
+        throw err;
+      }
+      return original(path, ...rest);
+    });
+    const components = await walkComponents(dir);
+    assert.deepEqual(
+      components.map((c) => [c.type, c.name, c.readError?.code ?? null]),
+      [['skill', 's1', null], ['agent', 'a1', 'EBUSY']]
+    );
+    assert.ok(readFileMock.mock.calls.some((call) => call.arguments[0] === a1Path));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('loadComponent: rejects with TypeError when filePath is not a string', async () => {
+  await assert.rejects(() => loadComponent('agent', 'x', undefined), TypeError);
+  await assert.rejects(() => loadComponent('agent', 'x', 123), TypeError);
 });
 
 test('walkComponents: rejects with TypeError when pluginRoot is missing or not a string', async () => {
