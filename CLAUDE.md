@@ -49,9 +49,9 @@ longer carries copies of these modules. gvt-dev pins an exact version of this
 package, so a `src/` change reaches the plugin only after a release here plus
 a pin bump in gvt-dev.
 
-`yaml` is a declared dependency but currently **unused** — see "Package
-shape" in `README.md` for why — and there is deliberately **no `@genvidtech`
-dependency of any kind** — this package sits at the bottom of the dependency
+`yaml` is the frontmatter parser (`src/frontmatter.mjs` delegates to it) and
+the package's only runtime dependency, and there is deliberately **no
+`@genvidtech` dependency of any kind** — this package sits at the bottom of the dependency
 graph.
 
 Node >= 22.
