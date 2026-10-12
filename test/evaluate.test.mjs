@@ -279,9 +279,10 @@ test('evaluate: two differently-shaped resolvers prove ADR-0057 verdicts A and C
 
 // 14. None of the three evaluators throw for an expected condition -- a
 //     missing file, a missing config file, a malformed config, an
-//     unresolvable key, or a command absent from PATH. The library's one
-//     permitted throw is walkComponents's TypeError on a non-string plugin
-//     root (component-walk.test.mjs), which none of these paths touch.
+//     unresolvable key, or a command absent from PATH. The library's only
+//     permitted throws are caller-contract TypeErrors: walkComponents's on a
+//     non-string plugin root and loadComponent's on a non-string filePath
+//     (component-walk.test.mjs), which none of these paths touch.
 test('evaluate: never throws for an expected condition -- returns a finding instead', async () => {
   await withTempDir(async (dir) => {
     const missingFilePath = join(dir, 'MISSING.md');

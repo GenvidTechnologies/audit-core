@@ -28,12 +28,28 @@ export interface ExpectsFileEntry   { path: string;    required?: boolean; reaso
 export interface ExpectsConfigEntry { key: string; in?: string; required?: boolean; reason: string }
 export interface ExpectsToolEntry   { command: string; required?: boolean; reason: string }
 export interface Expects { files?: ExpectsFileEntry[]; config?: ExpectsConfigEntry[]; tools?: ExpectsToolEntry[] }
-export interface Component {
+// `readError` exists only on the unreadable branch: on a successful read it is
+// ABSENT, not undefined, so a readable component keeps exactly its four keys.
+// `readError` is reserved for read (I/O) failure; a future parse failure would
+// be a sibling union member rather than a reuse of this one.
+export interface ReadableComponent {
   type: ComponentType;
   name: string;
   expects: Expects | null;
   frontmatter: Record<string, unknown> | null;
 }
+export interface ComponentReadError {
+  code: string | null;
+  message: string;
+}
+export interface UnreadableComponent {
+  type: ComponentType;
+  name: string;
+  expects: null;
+  frontmatter: null;
+  readError: ComponentReadError;
+}
+export type Component = ReadableComponent | UnreadableComponent;
 export declare function walkComponents(pluginRoot: string): Promise<Component[]>;
 export declare function loadComponent(type: ComponentType, name: string, filePath: string): Promise<Component>;
 

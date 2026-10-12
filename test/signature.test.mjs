@@ -43,6 +43,7 @@ const {
  * @typedef {import('@genvidtech/audit-core').ComponentType} ComponentType
  * @typedef {import('@genvidtech/audit-core').Expects} Expects
  * @typedef {import('@genvidtech/audit-core').Component} Component
+ * @typedef {import('@genvidtech/audit-core').UnreadableComponent} UnreadableComponent
  * @typedef {import('@genvidtech/audit-core').ExpectsFileEntry} ExpectsFileEntry
  * @typedef {import('@genvidtech/audit-core').ExpectsConfigEntry} ExpectsConfigEntry
  * @typedef {import('@genvidtech/audit-core').ExpectsToolEntry} ExpectsToolEntry
@@ -171,6 +172,7 @@ test('commandExists, parseYaml, and extractFrontmatter return their declared typ
 
 // 5. Return key set -- Record<keyof Component, true> errors on both a
 //    missing key (TS2741) and an excess key (TS2353).
+//    `keyof` of a union is its common keys, so `Component` still has 4.
 test('a Component literal satisfies the declared 4-key shape', () => {
   /** @type {ComponentType} */
   const type = 'skill';
@@ -191,6 +193,28 @@ test('a Component literal satisfies the declared 4-key shape', () => {
     type: true, name: true, expects: true, frontmatter: true,
   };
   assert.deepEqual(Object.keys(component).sort(), Object.keys(COMPONENT_KEYS).sort());
+});
+
+// 5b. Return key set on an UnreadableComponent -- loadComponent on a missing
+//     path resolves to the 5-key unreadable member of the Component union.
+test('loadComponent on a missing path returns an UnreadableComponent with exactly its declared 5 keys', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'signature-unreadable-'));
+  try {
+    // Unawaited binding pins the declared Promise<Component> return type.
+    /** @type {Promise<Component>} */
+    const p = audit.loadComponent('skill', 'ghost', join(dir, 'never-created.md'));
+    /** @type {Component} */
+    const c = await p;
+    if (!('readError' in c)) assert.fail('expected an UnreadableComponent');
+
+    /** @type {Record<keyof UnreadableComponent, true>} */
+    const keys = {
+      type: true, name: true, expects: true, frontmatter: true, readError: true,
+    };
+    assert.deepEqual(Object.keys(c).sort(), Object.keys(keys).sort());
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });
 
 // 6. Return key set on a real call result -- evaluateTool's satisfied branch

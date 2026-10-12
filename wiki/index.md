@@ -75,3 +75,5 @@ directory.
   check against gvt-dev pins a specific commit and layers a committed RECORD over a
   live fetch, rather than comparing against gvt-dev's main or the published npm
   package, and how it retires itself.
+
+* [Component read-error shape](component-read-error.md) - Why loadComponent resolves an unreadable file to an UnreadableComponent with readError, rather than reusing frontmatter null, returning null, or wrapping the result, and what that obliges consumers to do.

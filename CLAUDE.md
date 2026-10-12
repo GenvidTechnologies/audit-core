@@ -133,3 +133,9 @@ checks pass.
 
 Default and only long-lived branch is `main`. Feature work goes on a
 short-lived branch off `main` and is rebased (not merged) to stay linear.
+
+PRs land by **squash merge**, the only merge method the repo allows (merge
+commits and rebase merges are disabled in the GitHub settings). A branch's
+intermediate commit subjects, including a deliberately red `[WIP]` TDD step,
+never reach `main`. Only the PR title becomes the commit subject there, so
+the PR title is what has to follow the Commit Format above.

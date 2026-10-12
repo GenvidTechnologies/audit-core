@@ -88,7 +88,11 @@ fits. A claim drawn from a source carries a footnote keyed to that source's
 - **`generated`** — §5.2. `by` is **required** within the block. Value is
   `process:maintain-wiki` (the `process:<id>` actor form) — this names the
   durable producer (the skill's ingest contract), not a model or agent name
-  that changes underneath the page.
+  that changes underneath the page. The value stays `process:maintain-wiki`
+  even for a page authored outside an ingest, for example during a
+  `/gvt-dev:plan-task` or `/gvt-dev:triage-issues` run. `generated` records the
+  producer contract, not which session wrote the file. The page's
+  `<wikiDir>/log.md` entry is where the actual origin is recorded.
 - **`verified`** — §5.3, **never auto-emitted**. Approving an `ingest` at its
   interactive checkpoint is *not* `human:` verification — verification is a
   separate, deliberate act. A page therefore reads as `unverified` (§5.3's

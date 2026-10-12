@@ -9,6 +9,30 @@ While the package is at `0.x`, a breaking change to the public API takes a
 
 ## [Unreleased]
 
+### Fixed
+
+- `loadComponent` no longer rejects when a component file is missing or
+  unreadable (ENOENT, EACCES, EISDIR, EBUSY and the like). It resolves to a
+  component carrying `readError: { code, message }`, and `walkComponents`
+  passes that component through instead of failing the whole walk
+  ([GenvidTechnologies/audit-core#5](https://github.com/GenvidTechnologies/audit-core/issues/5)).
+
+### Changed
+
+- `Component` is now `ReadableComponent | UnreadableComponent`, with the new
+  exported types `ReadableComponent`, `UnreadableComponent` and
+  `ComponentReadError`. The success record keeps its four keys; `readError`
+  is absent from it. TypeScript callers narrow with `'readError' in c`
+  ([GenvidTechnologies/audit-core#5](https://github.com/GenvidTechnologies/audit-core/issues/5)).
+- **Consumer warning:** code that skips a component whose `expects` is null
+  (for example `if (!component.expects) continue`) will now silently skip an
+  unreadable one, since an unreadable component also has `expects: null`.
+  Handle `readError` explicitly.
+- `loadComponent` throws `TypeError` for a non-string `filePath`. This also
+  rejects the undeclared `URL` and `Buffer` paths that `readFile` used to
+  accept. It is a caller-contract violation, not an I/O failure (gvt-dev
+  ADR-0057 Q2).
+
 ### Added
 
 - `test/frontmatter.test.mjs` and `test/config-resolve.test.mjs`, ported from
