@@ -15,6 +15,25 @@ before. If a past entry itself needs correcting, add a new entry that says
 so; never edit or remove the old one in place. See `wiki/schema.md` for
 the full maintenance schema.
 
+## 2026-10-12
+
+* **Update**: `schema.md` gains a `### Deprecating a page` procedure (status,
+  a blockquote note, a `description` prefix mirrored verbatim in `index.md`,
+  `stale_after` removed, a log entry). The decay policy now says deprecated
+  pages omit `stale_after`. Applied to `upstream-identity-check.md`, which
+  drops its `stale_after: 2027-03-25`. Prompted by the #14 review, which
+  found the first deprecation's index marker out of step with the page's
+  `description`.
+
+* **Deprecation**: `upstream-identity-check.md` moved from `status: stable` to
+  `status: deprecated`. The check retired as designed when
+  GenvidTechnologies/claude-code-plugin-gvt-dev#458 closed as completed, and
+  `test/upstream-identity.test.mjs` was deleted in
+  GenvidTechnologies/audit-core#14; the page stays as the historical record.
+  `index.md` marks its entry deprecated. `signature-check-mechanism.md`'s
+  closing paragraph about the five `src/` modules was reworded to record the
+  decision without the frozen-module framing, also under #14.
+
 ## 2026-10-08
 
 * **Migration**: Moved the last two files under `docs/` into the bundle,

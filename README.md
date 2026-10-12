@@ -32,8 +32,9 @@ source.
 
 `yaml` is declared as a dependency but currently **unused**:
 `src/frontmatter.mjs` still ships the hand-rolled YAML parser moved verbatim
-from the plugin, and swapping its internals to `yaml` is deferred to the
-plugin's own follow-up work (ADR-0051 sequences it as a later step).
+from the plugin. Swapping its internals to `yaml` is tracked here as
+[#4](https://github.com/GenvidTechnologies/audit-core/issues/4) (ADR-0051
+sequences it as a later step).
 
 ## API surface
 

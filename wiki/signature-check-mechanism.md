@@ -111,10 +111,10 @@ regex check that runs without `tsc` and without `@types/node`; the
 completeness guard overlaps its name-parity role but depends on both. Keeping
 it preserves a detector that survives a toolchain problem.
 
-The five `.mjs` modules in `src/` are untouched — they are byte-identical to
-their `gvt-dev` originals and must stay that way. If the new check ever
-surfaces genuine drift, the fix goes to `src/index.d.ts`, never to a frozen
-module.
+This decision left the five `.mjs` modules in `src/` untouched. If the new
+check ever surfaces genuine drift, the fix goes to `src/index.d.ts`, not to
+those modules (the constraint on editing them was later retired in
+GenvidTechnologies/audit-core#14).
 
 ## Related
 
