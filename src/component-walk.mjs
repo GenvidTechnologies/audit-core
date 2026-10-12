@@ -24,8 +24,8 @@ export async function walkComponents(pluginRoot) {
       if (!entry.isDirectory()) continue;
       const skillFile = join(skillsDir, entry.name, 'SKILL.md');
       if (!(await fileExists(skillFile))) continue;
-      const component = await loadComponent('skill', entry.name, skillFile);
-      if (component) components.push(component);
+      // Unreadable components are passed through deliberately.
+      components.push(await loadComponent('skill', entry.name, skillFile));
     }
   }
 
@@ -35,8 +35,7 @@ export async function walkComponents(pluginRoot) {
     for (const entry of agents) {
       if (!entry.isFile() || !entry.name.endsWith('.md')) continue;
       const name = entry.name.replace(/\.md$/, '');
-      const component = await loadComponent('agent', name, join(agentsDir, entry.name));
-      if (component) components.push(component);
+      components.push(await loadComponent('agent', name, join(agentsDir, entry.name)));
     }
   }
 
@@ -44,11 +43,30 @@ export async function walkComponents(pluginRoot) {
 }
 
 export async function loadComponent(type, name, filePath) {
-  // Unguarded read: unreachable in practice today, since walkComponents has
-  // just confirmed the file exists before calling loadComponent — the
-  // no-throw property currently holds by accident rather than by design.
-  // Deferred fix (ADR-0057 Q2).
-  const content = await fs.readFile(filePath, 'utf8');
+  // An I/O failure resolves to an unreadable component (readError set)
+  // rather than rejecting. The filePath TypeError is the caller-contract
+  // exception (gvt-dev ADR-0057 Q2). Parse handling stays outside the try
+  // (GenvidTechnologies/audit-core#4).
+  if (typeof filePath !== 'string') {
+    throw new TypeError(
+      `loadComponent: filePath must be a string (component file path), got ${typeof filePath}`,
+    );
+  }
+  let content;
+  try {
+    content = await fs.readFile(filePath, 'utf8');
+  } catch (err) {
+    return {
+      type,
+      name,
+      expects: null,
+      frontmatter: null,
+      readError: {
+        code: typeof err?.code === 'string' ? err.code : null,
+        message: String(err?.message ?? err),
+      },
+    };
+  }
   const fm = extractFrontmatter(content);
   if (!fm) return { type, name, expects: null, frontmatter: null };
   return {
