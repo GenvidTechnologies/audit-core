@@ -74,10 +74,16 @@ The package barrel (`src/index.mjs`) re-exports 12 names.
 - `walkComponents(pluginRoot: string): Promise<Component[]>` — walks
   `pluginRoot/skills/*/SKILL.md` and `pluginRoot/agents/*.md`, loading each
   component's frontmatter. Skips entries that don't match the expected shape
-  rather than throwing.
+  rather than throwing. A component whose file can't be read is neither
+  skipped nor thrown: it is passed through as an `UnreadableComponent`
+  carrying `readError`.
 - `loadComponent(type: ComponentType, name: string, filePath: string): Promise<Component>` —
   reads and parses one component's frontmatter into a `Component` record
-  (`{ type, name, expects, frontmatter }`).
+  (`{ type, name, expects, frontmatter }`). It never rejects for an I/O
+  failure: an unreadable file resolves to an `UnreadableComponent`
+  (`expects: null`, `frontmatter: null`, `readError: { code, message }`, where
+  `code` is the Node error code or `null`). Narrow with `'readError' in c`.
+  It throws `TypeError` for a non-string `filePath`.
 
 ### Evaluation
 
@@ -90,7 +96,9 @@ The package barrel (`src/index.mjs`) re-exports 12 names.
 
 None of the three evaluators throw for an expected condition (a missing
 file/directory, an unreadable or malformed config, an unresolvable key, or a
-command absent from `PATH`) — each returns a finding instead.
+command absent from `PATH`) — each returns a finding instead. The loaders
+follow the same rule for I/O: a file that can't be read becomes a
+`readError` on the returned component, not a rejection.
 
 ## The caller supplies path resolution
 
