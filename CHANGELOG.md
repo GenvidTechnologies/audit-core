@@ -9,6 +9,8 @@ While the package is at `0.x`, a breaking change to the public API takes a
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-12
+
 ### Fixed
 
 - `loadComponent` no longer rejects when a component file is missing or
@@ -139,6 +141,8 @@ the original OIDC publishing setup, not a release.
 - The `gvt-dev` convention contract (`CONVENTIONS.md`, `docs/TOC.md`,
   `.gvt-agent.json`) and the scaffolded LLM-wiki under `wiki/`.
 
-[Unreleased]: https://github.com/GenvidTechnologies/audit-core/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/GenvidTechnologies/audit-core/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/GenvidTechnologies/audit-core/compare/v0.2.1...v0.3.0
+[0.2.1]: https://github.com/GenvidTechnologies/audit-core/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/GenvidTechnologies/audit-core/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/GenvidTechnologies/audit-core/releases/tag/v0.1.0
