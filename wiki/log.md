@@ -17,6 +17,12 @@ the full maintenance schema.
 
 ## 2026-10-12
 
+* **Update**: the `generated` bullet in `schema.md` now says outright that
+  `by: process:maintain-wiki` stays the same for a page authored outside an
+  ingest, and that the page's log entry records where it actually came from.
+  This log had explained that three times, and a review on audit-core#5 still
+  flagged the convention as a defect. Came out of a session retro.
+
 * **Creation**: component-read-error.md — a decision-context page recording
   why audit-core#5's `loadComponent` resolves an unreadable file to an
   `UnreadableComponent` carrying `readError: { code, message }`, rather than
