@@ -4,7 +4,6 @@ title: Upstream-identity check
 description: (Deprecated; retired in audit-core#14, kept as the historical record.) Why the src/ byte-identity check against gvt-dev pins a specific commit and layers a committed RECORD over a live fetch, rather than comparing against gvt-dev's main or the published npm package, and how it retires itself.
 tags: [testing, decision, audit-core, upstream]
 status: deprecated
-stale_after: 2027-03-25
 generated: { by: process:maintain-wiki, at: 2026-09-25T00:00:00Z }
 usage_window: { from: 2026-09-25, to: 2026-09-25 }
 sources:

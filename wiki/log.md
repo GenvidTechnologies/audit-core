@@ -17,6 +17,14 @@ the full maintenance schema.
 
 ## 2026-10-12
 
+* **Update**: `schema.md` gains a `### Deprecating a page` procedure (status,
+  a blockquote note, a `description` prefix mirrored verbatim in `index.md`,
+  `stale_after` removed, a log entry). The decay policy now says deprecated
+  pages omit `stale_after`. Applied to `upstream-identity-check.md`, which
+  drops its `stale_after: 2027-03-25`. Prompted by the #14 review, which
+  found the first deprecation's index marker out of step with the page's
+  `description`.
+
 * **Deprecation**: `upstream-identity-check.md` moved from `status: stable` to
   `status: deprecated`. The check retired as designed when
   GenvidTechnologies/claude-code-plugin-gvt-dev#458 closed as completed, and

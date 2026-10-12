@@ -138,6 +138,30 @@ When it's ambiguous whether a source is a new topic or a refinement of an
 existing one, prefer updating the closer existing page — a wiki with one
 strong page beats a wiki with two thin overlapping ones.
 
+### Deprecating a page
+
+When the thing a page describes is retired, **deprecate the page; don't
+delete it.** It stays as the historical record, and its `raw/` captures
+stay immutable. Every deprecation makes the same five edits:
+
+1. Set frontmatter `status: deprecated` (§5.4).
+2. Insert a `> **Deprecated.** …` blockquote right under the H1. Say what
+   retired it and where (issue or PR), and that the text below describes
+   things as they were. Leave the rest of the body and `sources` as they are.
+3. Prefix the frontmatter `description` with the deprecation, e.g.
+   `(Deprecated; retired in audit-core#14, kept as the historical record.)`,
+   and copy the new `description` into the page's `<wikiDir>/index.md` entry
+   **verbatim**. The index mirrors each page's `description`, so a marker
+   added only in the index is drift.
+4. Remove `stale_after`. A historical record doesn't decay (see
+   `## Decay / staleness policy`). Keeping the date would only make `lint`
+   flag a page nobody should update.
+5. Prepend a `* **Deprecation**: …` entry to `<wikiDir>/log.md`.
+
+Keep the page linked from `<wikiDir>/index.md`. Removing the entry orphans the
+page, and `lint` flags orphaned pages.
+`upstream-identity-check.md` is the example.
+
 ## The `raw/` immutability convention
 
 `raw/` is the **provenance tier**: every file under it is a captured source —
@@ -194,6 +218,9 @@ chosen up front:
 - A page describing something **pinned by an upstream ADR** may omit
   `stale_after` entirely; the ADR is the thing that would change, and it has
   its own review.
+- A **deprecated** page omits `stale_after`. It records what was true and
+  will never be updated, so there's nothing for it to go stale against (see
+  `### Deprecating a page`).
 
 The discriminator is **who can invalidate the page without telling us**. An
 upstream release can; a decision we made cannot. Where both apply, take the
