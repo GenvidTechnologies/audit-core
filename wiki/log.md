@@ -17,6 +17,19 @@ the full maintenance schema.
 
 ## 2026-10-12
 
+* **Creation**: component-read-error.md — a decision-context page recording
+  why audit-core#5's `loadComponent` resolves an unreadable file to an
+  `UnreadableComponent` carrying `readError: { code, message }`, rather than
+  reusing `frontmatter: null` or returning `null`, and why that is not the
+  ADR-0057 Q2 wrapper. Also records pass-through over skip in
+  `walkComponents`, the `filePath` `TypeError` as a second caller-contract
+  throw, and the pre-commitment that `readError` stays I/O-only for
+  audit-core#4. Cites the issue and its mutation-evidence comment by URL;
+  no `raw/` capture drove it.
+
+  Authored during a `/gvt-dev:plan-task` run for #5, not a
+  `maintain-wiki ingest`. No `verified` key, since nobody has checked it.
+
 * **Update**: `schema.md` gains a `### Deprecating a page` procedure (status,
   a blockquote note, a `description` prefix mirrored verbatim in `index.md`,
   `stale_after` removed, a log entry). The decay policy now says deprecated
