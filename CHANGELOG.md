@@ -42,23 +42,22 @@ While the package is at `0.x`, a breaking change to the public API takes a
   error, a non-mapping root, or a yaml exception) to a `MalformedComponent`
   `{ type, name, expects: null, frontmatter: null, parseError: { code,
   message } }`, where `code` is yaml's error code, `NOT_A_MAPPING` or
-  `YAML_EXCEPTION`; `walkComponents` passes it through. `Component` is now
-  `ReadableComponent | UnreadableComponent | MalformedComponent`, with the
-  new exported types `MalformedComponent` and `ComponentParseError`. Narrow
-  with `'parseError' in c`. The barrel still exports 12 runtime names
+  `YAML_EXCEPTION`; `walkComponents` passes it through. The barrel still
+  exports 12 runtime names
   ([GenvidTechnologies/audit-core#4](https://github.com/GenvidTechnologies/audit-core/issues/4)).
-- **Consumer warning:** a malformed component also has `expects: null`, so
-  `if (!component.expects) continue` silently skips it too. Handle
-  `parseError` explicitly.
-- `Component` is now `ReadableComponent | UnreadableComponent`, with the new
-  exported types `ReadableComponent`, `UnreadableComponent` and
-  `ComponentReadError`. The success record keeps its four keys; `readError`
-  is absent from it. TypeScript callers narrow with `'readError' in c`
-  ([GenvidTechnologies/audit-core#5](https://github.com/GenvidTechnologies/audit-core/issues/5)).
+- `Component` is now
+  `ReadableComponent | UnreadableComponent | MalformedComponent`, with the
+  new exported types `ReadableComponent`, `UnreadableComponent`,
+  `ComponentReadError`, `MalformedComponent` and `ComponentParseError`. The
+  success record keeps its four keys; `readError` and `parseError` are
+  absent from it. TypeScript callers narrow with `'readError' in c` and
+  `'parseError' in c`
+  ([GenvidTechnologies/audit-core#5](https://github.com/GenvidTechnologies/audit-core/issues/5),
+  [GenvidTechnologies/audit-core#4](https://github.com/GenvidTechnologies/audit-core/issues/4)).
 - **Consumer warning:** code that skips a component whose `expects` is null
   (for example `if (!component.expects) continue`) will now silently skip an
-  unreadable one, since an unreadable component also has `expects: null`.
-  Handle `readError` explicitly.
+  unreadable or malformed one, since both also have `expects: null`. Handle
+  `readError` and `parseError` explicitly.
 - `loadComponent` throws `TypeError` for a non-string `filePath`. This also
   rejects the undeclared `URL` and `Buffer` paths that `readFile` used to
   accept. It is a caller-contract violation, not an I/O failure (gvt-dev

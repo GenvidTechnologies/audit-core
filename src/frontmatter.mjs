@@ -20,14 +20,17 @@ function readYaml(text) {
         error: { code: first.code, message: String(first.message).split(/\r?\n/)[0] },
       };
     }
+    // An empty or comment-only document has no root node; an explicit `~` or
+    // `null` root is a scalar node, so it falls through to NOT_A_MAPPING.
+    if (doc.contents === null) return { value: {}, error: null };
     const v = doc.toJS();
-    if (v === null || v === undefined) return { value: {}, error: null };
-    if (typeof v === 'object' && !Array.isArray(v)) return { value: v, error: null };
+    if (v !== null && typeof v === 'object' && !Array.isArray(v)) return { value: v, error: null };
+    const kind = v === null ? 'null' : Array.isArray(v) ? 'sequence' : typeof v;
     return {
       value: {},
       error: {
         code: 'NOT_A_MAPPING',
-        message: `frontmatter root is a ${Array.isArray(v) ? 'sequence' : typeof v}, not a mapping`,
+        message: `frontmatter root is a ${kind}, not a mapping`,
       },
     };
   } catch (err) {

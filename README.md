@@ -51,8 +51,9 @@ The package barrel (`src/index.mjs`) re-exports 12 names.
   from its Markdown source; `null` if no frontmatter block is present. A
   block that is malformed or whose root is not a mapping yields `{}`.
 - `parseYaml(text: string): Record<string, unknown>` — parses YAML text with
-  the `yaml` package and returns a plain object. It never throws: a YAML
-  error, a root that is not a mapping (a scalar or sequence), or an
+  the `yaml` package and returns a plain object. It never throws for a
+  string input: a YAML error, a root that is not a mapping (a scalar,
+  including `~`/`null`, or a sequence), or an
   exception from `yaml` (such as an unresolved alias) returns `{}`, as does
   an empty document. Because it is real YAML, `''` inside a single-quoted
   scalar unescapes to `'`, a ` #` in a plain scalar starts a comment, and

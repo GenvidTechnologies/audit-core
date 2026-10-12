@@ -51,8 +51,8 @@ a pin bump in gvt-dev.
 
 `yaml` is the frontmatter parser (`src/frontmatter.mjs` delegates to it) and
 the package's only runtime dependency, and there is deliberately **no
-`@genvidtech` dependency of any kind** — this package sits at the bottom of the dependency
-graph.
+`@genvidtech` dependency of any kind** — this package sits at the bottom of
+the dependency graph.
 
 Node >= 22.
 

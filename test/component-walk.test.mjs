@@ -252,3 +252,35 @@ test('loadComponent: scalar and list roots are NOT_A_MAPPING; an empty document 
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test('loadComponent: an explicit null root is NOT_A_MAPPING, unlike an empty or comment-only document', async () => {
+  const dir = await withTempRepo(async (d) => {
+    await writeRepoFile(d, 'skills/tilde/SKILL.md', '---\n~\n---\nbody\n');
+    await writeRepoFile(d, 'skills/null/SKILL.md', '---\nnull\n---\nbody\n');
+    await writeRepoFile(d, 'skills/comment/SKILL.md', '---\n# only a comment\n---\nbody\n');
+  });
+  try {
+    for (const name of ['tilde', 'null']) {
+      const c = await loadComponent('skill', name, join(dir, 'skills', name, 'SKILL.md'));
+      assert.equal(c.parseError?.code, 'NOT_A_MAPPING', name);
+    }
+    const comment = await loadComponent('skill', 'comment', join(dir, 'skills', 'comment', 'SKILL.md'));
+    assert.equal('parseError' in comment, false);
+    assert.deepEqual(comment.frontmatter, {});
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('loadComponent: a yaml exception (unresolved alias) resolves with parseError YAML_EXCEPTION', async () => {
+  const dir = await withTempRepo(async (d) => {
+    await writeRepoFile(d, 'skills/alias/SKILL.md', '---\na: *x\n---\nbody\n');
+  });
+  try {
+    const c = await loadComponent('skill', 'alias', join(dir, 'skills', 'alias', 'SKILL.md'));
+    assert.equal(c.parseError?.code, 'YAML_EXCEPTION');
+    assert.equal(c.frontmatter, null);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
