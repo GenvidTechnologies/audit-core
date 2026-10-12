@@ -28,10 +28,12 @@ export interface ExpectsFileEntry   { path: string;    required?: boolean; reaso
 export interface ExpectsConfigEntry { key: string; in?: string; required?: boolean; reason: string }
 export interface ExpectsToolEntry   { command: string; required?: boolean; reason: string }
 export interface Expects { files?: ExpectsFileEntry[]; config?: ExpectsConfigEntry[]; tools?: ExpectsToolEntry[] }
-// `readError` exists only on the unreadable branch: on a successful read it is
-// ABSENT, not undefined, so a readable component keeps exactly its four keys.
-// `readError` is reserved for read (I/O) failure; a future parse failure would
-// be a sibling union member rather than a reuse of this one.
+// `readError` and `parseError` each exist only on their own branch: on a
+// readable component both are ABSENT, not undefined, so it keeps exactly its
+// four keys. `parseError` marks frontmatter the `yaml` parser rejected, or
+// whose root is not a mapping (`code` is yaml's error code, `NOT_A_MAPPING`, or
+// `YAML_EXCEPTION` when yaml throws, e.g. on an unresolved alias).
+// Narrow with `'readError' in c` / `'parseError' in c`.
 export interface ReadableComponent {
   type: ComponentType;
   name: string;
@@ -49,7 +51,18 @@ export interface UnreadableComponent {
   frontmatter: null;
   readError: ComponentReadError;
 }
-export type Component = ReadableComponent | UnreadableComponent;
+export interface ComponentParseError {
+  code: string;
+  message: string;
+}
+export interface MalformedComponent {
+  type: ComponentType;
+  name: string;
+  expects: null;
+  frontmatter: null;
+  parseError: ComponentParseError;
+}
+export type Component = ReadableComponent | UnreadableComponent | MalformedComponent;
 export declare function walkComponents(pluginRoot: string): Promise<Component[]>;
 export declare function loadComponent(type: ComponentType, name: string, filePath: string): Promise<Component>;
 

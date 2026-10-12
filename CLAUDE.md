@@ -3,7 +3,8 @@
 # @genvidtech/audit-core
 
 Shared audit mechanism for the `gvt-dev` and `gvt-construct3` convention
-audits. This is a **library, not a CLI** — it declares no `bin` entry and is
+audits (repos `GenvidTechnologies/claude-code-plugin-gvt-dev` and
+`GenvidTechnologies/claude-code-plugin-gvt-construct3`). This is a **library, not a CLI** — it declares no `bin` entry and is
 not meant to be invoked with `npx`. Consumers import it as an ES module.
 
 The library implementation has landed: `src/` holds the five extracted
@@ -49,10 +50,10 @@ longer carries copies of these modules. gvt-dev pins an exact version of this
 package, so a `src/` change reaches the plugin only after a release here plus
 a pin bump in gvt-dev.
 
-`yaml` is a declared dependency but currently **unused** — see "Package
-shape" in `README.md` for why — and there is deliberately **no `@genvidtech`
-dependency of any kind** — this package sits at the bottom of the dependency
-graph.
+`yaml` is the frontmatter parser (`src/frontmatter.mjs` delegates to it) and
+the package's only runtime dependency, and there is deliberately **no
+`@genvidtech` dependency of any kind** — this package sits at the bottom of
+the dependency graph.
 
 Node >= 22.
 
@@ -106,6 +107,12 @@ so a bump that stops at the manifest leaves `VERSION` stale.
 `test/smoke.test.mjs` asserts the two agree, so the mismatch fails `npm test`
 rather than shipping — but fix it in the same commit as the bump, before the
 validate step.
+
+**Feature branches don't bump the version.** A branch adds only CHANGELOG
+`[Unreleased]` entries; the four-spot bump happens at release, via
+`/gvt-dev:release-npm-package`, after the branch merges. When an issue's
+acceptance criteria ask for the bump on its own branch (both #5 and #4 did),
+pledge that row `[not-yet-due]` instead of doing it there.
 
 ## Commit Format
 

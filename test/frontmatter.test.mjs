@@ -199,3 +199,37 @@ test('parseYaml: literal block scalar preserves an interior blank line as-is', (
   const out = parseYaml(yaml);
   assert.equal(out.description, 'line one\n\nline two\n');
 });
+
+// --- #4: yaml-backed parsing -------------------------------------------------
+
+test('R1: a colon-space inside a plain scalar is a YAML error and yields {} without throwing', () => {
+  const md = '---\nname: x\ndescription: Use it: now\nmetadata:\n  pillar: spec\n---\n';
+  assert.deepEqual(extractFrontmatter(md), {});
+  assert.deepEqual(
+    parseYaml('name: x\ndescription: Use it: now\nmetadata:\n  pillar: spec'),
+    {}
+  );
+});
+
+test('R4: single-quoted scalars unescape doubled quotes', () => {
+  assert.deepEqual(extractFrontmatter("---\ntitle: 'It''s here'\n---\nbody\n"), { title: "It's here" });
+  assert.deepEqual(extractFrontmatter("---\ntitle: 'plain'\n---\nbody\n"), { title: 'plain' });
+  assert.deepEqual(extractFrontmatter("---\ntitle: ''\n---\nbody\n"), { title: '' });
+});
+
+test('N1 (string API): scalar root, list root, and empty document all yield {}', () => {
+  assert.deepEqual(extractFrontmatter('---\njust a string\n---\n'), {});
+  assert.deepEqual(extractFrontmatter('---\n- a\n- b\n---\n'), {});
+  assert.deepEqual(extractFrontmatter('---\n\n---\n'), {});
+});
+
+test('comment pin: a plain scalar is cut at " #"', () => {
+  // YAML's comment rule: " #" starts a comment. The one divergence the #4
+  // differential found, in gvt-construct3's create-c3-op.
+  assert.deepEqual(extractFrontmatter('---\nreason: see chef #89, below\n---\n'), { reason: 'see chef' });
+});
+
+test('no-throw: an unresolved alias, which makes yaml throw in toJS, yields {}', () => {
+  assert.deepEqual(parseYaml('a: *x'), {});
+  assert.deepEqual(extractFrontmatter('---\na: *x\n---\n'), {});
+});

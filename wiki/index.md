@@ -77,3 +77,5 @@ directory.
   package, and how it retires itself.
 
 * [Component read-error shape](component-read-error.md) - Why loadComponent resolves an unreadable file to an UnreadableComponent with readError, rather than reusing frontmatter null, returning null, or wrapping the result, and what that obliges consumers to do.
+
+* [Malformed-frontmatter parse error](frontmatter-parse-error.md) - Why a component whose frontmatter yaml rejects resolves to a MalformedComponent with parseError while the string API returns {} and never throws, rather than returning {} alone or falling back to the hand-rolled parser, and what that obliges consumers to do.

@@ -16,18 +16,48 @@ While the package is at `0.x`, a breaking change to the public API takes a
   component carrying `readError: { code, message }`, and `walkComponents`
   passes that component through instead of failing the whole walk
   ([GenvidTechnologies/audit-core#5](https://github.com/GenvidTechnologies/audit-core/issues/5)).
+- `''` inside a single-quoted scalar now unescapes to `'` (it was kept
+  verbatim by the hand-rolled parser). Subsumed by the move to `yaml`
+  ([GenvidTechnologies/audit-core#11](https://github.com/GenvidTechnologies/audit-core/issues/11),
+  [GenvidTechnologies/audit-core#4](https://github.com/GenvidTechnologies/audit-core/issues/4)).
 
 ### Changed
 
-- `Component` is now `ReadableComponent | UnreadableComponent`, with the new
-  exported types `ReadableComponent`, `UnreadableComponent` and
-  `ComponentReadError`. The success record keeps its four keys; `readError`
-  is absent from it. TypeScript callers narrow with `'readError' in c`
-  ([GenvidTechnologies/audit-core#5](https://github.com/GenvidTechnologies/audit-core/issues/5)).
+- `src/frontmatter.mjs` now parses with the `yaml` package (`parseDocument`,
+  YAML 1.2, core schema); the hand-rolled subset parser is deleted.
+  `extractFrontmatter` and `parseYaml` keep their signatures and still never
+  throw: a YAML error, a root that is not a mapping, or an exception from
+  `yaml` (such as an unresolved alias) yields `{}`, and `extractFrontmatter`
+  still returns `null` when there is no `---` block
+  ([GenvidTechnologies/audit-core#4](https://github.com/GenvidTechnologies/audit-core/issues/4)).
+- Parsing semantics that change with the swap: a ` #` in a plain scalar now
+  starts a YAML comment and truncates the value; anchors and aliases
+  resolve; input the old parser accepted but YAML rejects is now a parse
+  error (a colon-space plain scalar such as `description: Use it: now`,
+  duplicate keys, tab indentation, an unclosed quote). Over the gvt-dev (32
+  components) and gvt-construct3 (6) corpora the only difference is one
+  `create-c3-op` `reason` cut at ` #89`, tracked as
+  [GenvidTechnologies/claude-code-plugin-gvt-construct3#151](https://github.com/GenvidTechnologies/claude-code-plugin-gvt-construct3/issues/151).
+- `loadComponent` resolves a file whose frontmatter fails to parse (a yaml
+  error, a non-mapping root, or a yaml exception) to a `MalformedComponent`
+  `{ type, name, expects: null, frontmatter: null, parseError: { code,
+  message } }`, where `code` is yaml's error code, `NOT_A_MAPPING` or
+  `YAML_EXCEPTION`; `walkComponents` passes it through. The barrel still
+  exports 12 runtime names
+  ([GenvidTechnologies/audit-core#4](https://github.com/GenvidTechnologies/audit-core/issues/4)).
+- `Component` is now
+  `ReadableComponent | UnreadableComponent | MalformedComponent`, with the
+  new exported types `ReadableComponent`, `UnreadableComponent`,
+  `ComponentReadError`, `MalformedComponent` and `ComponentParseError`. The
+  success record keeps its four keys; `readError` and `parseError` are
+  absent from it. TypeScript callers narrow with `'readError' in c` and
+  `'parseError' in c`
+  ([GenvidTechnologies/audit-core#5](https://github.com/GenvidTechnologies/audit-core/issues/5),
+  [GenvidTechnologies/audit-core#4](https://github.com/GenvidTechnologies/audit-core/issues/4)).
 - **Consumer warning:** code that skips a component whose `expects` is null
   (for example `if (!component.expects) continue`) will now silently skip an
-  unreadable one, since an unreadable component also has `expects: null`.
-  Handle `readError` explicitly.
+  unreadable or malformed one, since both also have `expects: null`. Handle
+  `readError` and `parseError` explicitly.
 - `loadComponent` throws `TypeError` for a non-string `filePath`. This also
   rejects the undeclared `URL` and `Buffer` paths that `readFile` used to
   accept. It is a caller-contract violation, not an I/O failure (gvt-dev

@@ -30,11 +30,10 @@ source.
 `@genvidtech/audit-core` is peer to `@genvidtech/c3source` and
 `@genvidtech/mcp-utils` in the Genvid Technologies npm org.
 
-`yaml` is declared as a dependency but currently **unused**:
-`src/frontmatter.mjs` still ships the hand-rolled YAML parser moved verbatim
-from the plugin. Swapping its internals to `yaml` is tracked here as
-[#4](https://github.com/GenvidTechnologies/audit-core/issues/4) (ADR-0051
-sequences it as a later step).
+`yaml` is the frontmatter parser: `src/frontmatter.mjs` delegates to its
+`parseDocument` (YAML 1.2, core schema)
+([#4](https://github.com/GenvidTechnologies/audit-core/issues/4)). It is the
+package's only runtime dependency.
 
 ## API surface
 
@@ -49,10 +48,16 @@ The package barrel (`src/index.mjs`) re-exports 12 names.
 
 - `extractFrontmatter(source: string): Record<string, unknown> | null` —
   extracts and parses a skill/agent's `---`-delimited YAML frontmatter block
-  from its Markdown source; `null` if no frontmatter block is present.
-- `parseYaml(text: string): Record<string, unknown>` — parses the minimal
-  YAML subset used by skill/agent frontmatter (scalars, one level of nesting,
-  arrays of objects, block scalars). Not a general-purpose YAML parser.
+  from its Markdown source; `null` if no frontmatter block is present. A
+  block that is malformed or whose root is not a mapping yields `{}`.
+- `parseYaml(text: string): Record<string, unknown>` — parses YAML text with
+  the `yaml` package and returns a plain object. It never throws for a
+  string input: a YAML error, a root that is not a mapping (a scalar,
+  including `~`/`null`, or a sequence), or an
+  exception from `yaml` (such as an unresolved alias) returns `{}`, as does
+  an empty document. Because it is real YAML, `''` inside a single-quoted
+  scalar unescapes to `'`, a ` #` in a plain scalar starts a comment, and
+  anchors and aliases resolve.
 
 ### Config resolution
 
@@ -76,14 +81,23 @@ The package barrel (`src/index.mjs`) re-exports 12 names.
   component's frontmatter. Skips entries that don't match the expected shape
   rather than throwing. A component file that is found but then can't be
   read is neither skipped nor thrown: it is passed through as an
-  `UnreadableComponent` carrying `readError`.
+  `UnreadableComponent` carrying `readError`. Likewise a file whose
+  frontmatter does not parse is passed through as a `MalformedComponent`
+  carrying `parseError`.
 - `loadComponent(type: ComponentType, name: string, filePath: string): Promise<Component>` —
   reads and parses one component's frontmatter into a `Component` record
   (`{ type, name, expects, frontmatter }`). It never rejects for an I/O
   failure: an unreadable file resolves to an `UnreadableComponent`
   (`expects: null`, `frontmatter: null`, `readError: { code, message }`, where
-  `code` is the Node error code or `null`). Narrow with `'readError' in c`.
-  It throws `TypeError` for a non-string `filePath`.
+  `code` is the Node error code or `null`). A file whose frontmatter yaml
+  rejects, whose root is not a mapping, or on which yaml throws resolves to a
+  `MalformedComponent` (`expects: null`, `frontmatter: null`,
+  `parseError: { code, message }`, where `code` is yaml's error code,
+  `NOT_A_MAPPING` or `YAML_EXCEPTION`). Narrow with `'readError' in c` and
+  `'parseError' in c`. `Component` is
+  `ReadableComponent | UnreadableComponent | MalformedComponent`; the
+  supporting types `ComponentReadError` and `ComponentParseError` are
+  exported too. It throws `TypeError` for a non-string `filePath`.
 
 ### Evaluation
 
@@ -97,8 +111,10 @@ The package barrel (`src/index.mjs`) re-exports 12 names.
 None of the three evaluators throw for an expected condition (a missing
 file/directory, an unreadable or malformed config, an unresolvable key, or a
 command absent from `PATH`) — each returns a finding instead. The loaders
-follow the same rule for I/O: a file that can't be read becomes a
-`readError` on the returned component, not a rejection.
+follow the same rule for I/O and for parsing: a file that can't be read
+becomes a `readError` on the returned component, and one whose frontmatter
+doesn't parse becomes a `parseError`, not a rejection. Both leave
+`expects: null`, so check for them before skipping on a null `expects`.
 
 ## The caller supplies path resolution
 
