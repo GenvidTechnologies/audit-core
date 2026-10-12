@@ -44,6 +44,7 @@ const {
  * @typedef {import('@genvidtech/audit-core').Expects} Expects
  * @typedef {import('@genvidtech/audit-core').Component} Component
  * @typedef {import('@genvidtech/audit-core').UnreadableComponent} UnreadableComponent
+ * @typedef {import('@genvidtech/audit-core').MalformedComponent} MalformedComponent
  * @typedef {import('@genvidtech/audit-core').ExpectsFileEntry} ExpectsFileEntry
  * @typedef {import('@genvidtech/audit-core').ExpectsConfigEntry} ExpectsConfigEntry
  * @typedef {import('@genvidtech/audit-core').ExpectsToolEntry} ExpectsToolEntry
@@ -210,6 +211,30 @@ test('loadComponent on a missing path returns an UnreadableComponent with exactl
     /** @type {Record<keyof UnreadableComponent, true>} */
     const keys = {
       type: true, name: true, expects: true, frontmatter: true, readError: true,
+    };
+    assert.deepEqual(Object.keys(c).sort(), Object.keys(keys).sort());
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+// 5c. Return key set on a MalformedComponent -- loadComponent on a file whose
+//     frontmatter yaml rejects resolves to the 5-key malformed member.
+test('loadComponent on malformed frontmatter returns a MalformedComponent with exactly its declared 5 keys', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'signature-malformed-'));
+  try {
+    const file = join(dir, 'bad.md');
+    await writeFile(file, '---\nname: x\ndescription: Use it: now\n---\nbody\n');
+    // Unawaited binding pins the declared Promise<Component> return type.
+    /** @type {Promise<Component>} */
+    const p = audit.loadComponent('skill', 'bad', file);
+    /** @type {Component} */
+    const c = await p;
+    if (!('parseError' in c)) assert.fail('expected a MalformedComponent');
+
+    /** @type {Record<keyof MalformedComponent, true>} */
+    const keys = {
+      type: true, name: true, expects: true, frontmatter: true, parseError: true,
     };
     assert.deepEqual(Object.keys(c).sort(), Object.keys(keys).sort());
   } finally {

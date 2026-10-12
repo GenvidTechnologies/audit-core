@@ -193,3 +193,62 @@ test('walkComponents: rejects with TypeError when pluginRoot is missing or not a
   await assert.rejects(() => walkComponents(undefined), TypeError);
   await assert.rejects(() => walkComponents(123), TypeError);
 });
+
+// --- #4: malformed frontmatter -----------------------------------------------
+
+const BAD_FM = '---\nname: x\ndescription: Use it: now\nmetadata:\n  pillar: spec\n---\nbody\n';
+
+test('loadComponent: yaml-rejected frontmatter resolves to a MalformedComponent with parseError', async () => {
+  const dir = await withTempRepo(async (d) => {
+    await writeRepoFile(d, 'skills/bad/SKILL.md', BAD_FM);
+  });
+  try {
+    const c = await loadComponent('skill', 'bad', join(dir, 'skills', 'bad', 'SKILL.md'));
+    assert.deepEqual(Object.keys(c).sort(), ['expects', 'frontmatter', 'name', 'parseError', 'type']);
+    assert.equal(c.expects, null);
+    assert.equal(c.frontmatter, null);
+    assert.equal(typeof c.parseError.code, 'string');
+    assert.ok(c.parseError.code.length > 0);
+    assert.equal(typeof c.parseError.message, 'string');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('walkComponents: a malformed component is passed through with parseError; a good one has none', async () => {
+  const dir = await withTempRepo(async (d) => {
+    await writeRepoFile(d, 'skills/good/SKILL.md', '---\nname: good\ndescription: x\n---\nbody\n');
+    await writeRepoFile(d, 'agents/bad.md', BAD_FM);
+  });
+  try {
+    const components = await walkComponents(dir);
+    assert.equal(components.length, 2);
+    const good = components.find((c) => c.name === 'good');
+    const bad = components.find((c) => c.name === 'bad');
+    assert.ok(good && bad);
+    assert.equal('parseError' in good, false);
+    assert.ok('parseError' in bad);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('loadComponent: scalar and list roots are NOT_A_MAPPING; an empty document is a readable component', async () => {
+  const dir = await withTempRepo(async (d) => {
+    await writeRepoFile(d, 'skills/scalar/SKILL.md', '---\njust a string\n---\nbody\n');
+    await writeRepoFile(d, 'skills/list/SKILL.md', '---\n- a\n- b\n---\nbody\n');
+    await writeRepoFile(d, 'skills/empty/SKILL.md', '---\n\n---\nbody\n');
+  });
+  try {
+    const scalar = await loadComponent('skill', 'scalar', join(dir, 'skills', 'scalar', 'SKILL.md'));
+    assert.equal(scalar.parseError?.code, 'NOT_A_MAPPING');
+    const list = await loadComponent('skill', 'list', join(dir, 'skills', 'list', 'SKILL.md'));
+    assert.equal(list.parseError?.code, 'NOT_A_MAPPING');
+    const empty = await loadComponent('skill', 'empty', join(dir, 'skills', 'empty', 'SKILL.md'));
+    assert.equal('parseError' in empty, false);
+    assert.equal('readError' in empty, false);
+    assert.equal(empty.expects, null);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
