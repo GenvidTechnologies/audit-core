@@ -8,7 +8,7 @@ import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
 
 import { fileExists, dirExists } from './probes.mjs';
-import { extractFrontmatter } from './frontmatter.mjs';
+import { readFrontmatter } from './frontmatter.mjs';
 
 export async function walkComponents(pluginRoot) {
   if (typeof pluginRoot !== 'string') {
@@ -24,7 +24,7 @@ export async function walkComponents(pluginRoot) {
       if (!entry.isDirectory()) continue;
       const skillFile = join(skillsDir, entry.name, 'SKILL.md');
       if (!(await fileExists(skillFile))) continue;
-      // Unreadable components are passed through deliberately.
+      // Unreadable and malformed components are passed through deliberately.
       components.push(await loadComponent('skill', entry.name, skillFile));
     }
   }
@@ -45,8 +45,9 @@ export async function walkComponents(pluginRoot) {
 export async function loadComponent(type, name, filePath) {
   // An I/O failure resolves to an unreadable component (readError set)
   // rather than rejecting. The filePath TypeError is the caller-contract
-  // exception (gvt-dev ADR-0057 Q2). Parse handling stays outside the try
-  // (GenvidTechnologies/audit-core#4).
+  // exception (gvt-dev ADR-0057 Q2). A parse failure likewise resolves to a
+  // malformed component (parseError set, frontmatter null); parse handling
+  // stays outside the try (GenvidTechnologies/audit-core#4).
   if (typeof filePath !== 'string') {
     throw new TypeError(
       `loadComponent: filePath must be a string (component file path), got ${typeof filePath}`,
@@ -67,12 +68,15 @@ export async function loadComponent(type, name, filePath) {
       },
     };
   }
-  const fm = extractFrontmatter(content);
-  if (!fm) return { type, name, expects: null, frontmatter: null };
+  const parsed = readFrontmatter(content);
+  if (!parsed) return { type, name, expects: null, frontmatter: null };
+  if (parsed.error) {
+    return { type, name, expects: null, frontmatter: null, parseError: parsed.error };
+  }
   return {
     type,
     name,
-    expects: fm.metadata?.expects ?? null,
-    frontmatter: fm,
+    expects: parsed.value.metadata?.expects ?? null,
+    frontmatter: parsed.value,
   };
 }

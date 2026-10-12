@@ -31,7 +31,8 @@ export interface Expects { files?: ExpectsFileEntry[]; config?: ExpectsConfigEnt
 // `readError` and `parseError` each exist only on their own branch: on a
 // readable component both are ABSENT, not undefined, so it keeps exactly its
 // four keys. `parseError` marks frontmatter the `yaml` parser rejected, or
-// whose root is not a mapping (`code` is yaml's error code, or `NOT_A_MAPPING`).
+// whose root is not a mapping (`code` is yaml's error code, `NOT_A_MAPPING`, or
+// `YAML_EXCEPTION` when yaml throws, e.g. on an unresolved alias).
 // Narrow with `'readError' in c` / `'parseError' in c`.
 export interface ReadableComponent {
   type: ComponentType;

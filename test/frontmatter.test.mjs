@@ -228,3 +228,8 @@ test('comment pin: a plain scalar is cut at " #"', () => {
   // differential found, in gvt-construct3's create-c3-op.
   assert.deepEqual(extractFrontmatter('---\nreason: see chef #89, below\n---\n'), { reason: 'see chef' });
 });
+
+test('no-throw: an unresolved alias, which makes yaml throw in toJS, yields {}', () => {
+  assert.deepEqual(parseYaml('a: *x'), {});
+  assert.deepEqual(extractFrontmatter('---\na: *x\n---\n'), {});
+});
