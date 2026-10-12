@@ -74,9 +74,9 @@ The package barrel (`src/index.mjs`) re-exports 12 names.
 - `walkComponents(pluginRoot: string): Promise<Component[]>` — walks
   `pluginRoot/skills/*/SKILL.md` and `pluginRoot/agents/*.md`, loading each
   component's frontmatter. Skips entries that don't match the expected shape
-  rather than throwing. A component whose file can't be read is neither
-  skipped nor thrown: it is passed through as an `UnreadableComponent`
-  carrying `readError`.
+  rather than throwing. A component file that is found but then can't be
+  read is neither skipped nor thrown: it is passed through as an
+  `UnreadableComponent` carrying `readError`.
 - `loadComponent(type: ComponentType, name: string, filePath: string): Promise<Component>` —
   reads and parses one component's frontmatter into a `Component` record
   (`{ type, name, expects, frontmatter }`). It never rejects for an I/O

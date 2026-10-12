@@ -41,8 +41,13 @@ An `UnreadableComponent` is `{ type, name, expects: null, frontmatter: null,
 readError: { code, message } }`, where `code` is the Node error code or `null`.
 The return type stays `Promise<Component>`. On a successful read `readError`
 is **absent** (not `undefined`), so the readable record keeps exactly its four
-keys. TypeScript callers narrow with `'readError' in c`. `walkComponents`
-passes unreadable components through rather than rejecting or skipping them.
+keys. TypeScript callers narrow with `'readError' in c`. When `walkComponents`
+finds a component file and then fails to read it, it passes that component
+through rather than rejecting or skipping it. The skills branch still checks
+`SKILL.md` with `fileExists` first. That check returns `false` on any `stat`
+error, so a skill whose file can't even be stat'd is still skipped as absent.
+Read failures such as `EBUSY` and `EACCES` don't block `stat`, so they reach
+the pass-through.
 
 ## Options considered
 
@@ -52,7 +57,9 @@ indistinguishable from one that was read fine and has no frontmatter, so the
 
 **B. Return `null` (`Promise<Component | null>`).** Rejected. It breaks the
 fixture's `Promise<Component>` binding and passing a result straight to the
-evaluators; the designer measured `TS2322` and `TS2345` with `tsc`. The walk's
+evaluators. A throwaway `tsc` probe during design reported `TS2322` and
+`TS2345`. It was not captured under `raw/`, so treat it as reported, not
+reproducible from this repo. The walk's
 guard would then drop the component silently, and the cause would be lost.
 
 **C′. The union (chosen).** The return type is unchanged and the success shape
@@ -82,7 +89,11 @@ that warning.
 
 `loadComponent` throws `TypeError` for a non-string `filePath`. This is a
 second named caller-contract throw, alongside `walkComponents`' non-string-root
-`TypeError` (ADR-0057 Q2). Without it, the catch would absorb Node's
+`TypeError`. ADR-0057 Q2 says "The single permitted throw is a caller-contract
+violation" and names only the plugin root. This decision extends that to a
+second instance of the same class. ADR-0057 Q2 also deferred `loadComponent`'s
+unguarded read to gvt-dev#458; this page closes that item here. The ADR's own
+wording is gvt-dev's to amend. Without the guard, the catch would absorb Node's
 `ERR_INVALID_ARG_TYPE` into a fake unreadable record. Measured:
 `fs.promises.readFile(999)` already rejects with an `ERR_INVALID_ARG_TYPE`
 `TypeError`, so the guard preserves today's `TypeError` rather than adding a
