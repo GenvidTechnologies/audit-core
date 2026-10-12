@@ -17,6 +17,20 @@ the full maintenance schema.
 
 ## 2026-10-12
 
+* **Creation**: frontmatter-parse-error.md — a decision-context page recording
+  why audit-core#4's swap to `yaml` resolves a component with malformed
+  frontmatter to a `MalformedComponent` carrying
+  `parseError: { code, message }`, while the string API returns `{}` and never
+  throws. Rejects `{}` alone (a silent false green, since `expects: null` reads
+  as "no expectations") and a fallback to the hand-rolled parser. Records the
+  `YAML_EXCEPTION` code found during execution, the accepted semantic changes,
+  and the one corpus divergence handed upstream as gvt-construct3#151. Driven by
+  `raw/2026-10-12-yaml-frontmatter-swap-probes.md`.
+
+  Authored during a `/gvt-dev:plan-task` run for #4, not a
+  `maintain-wiki ingest`. No `verified` key, since nobody
+  has checked it.
+
 * **Update**: the `generated` bullet in `schema.md` now says outright that
   `by: process:maintain-wiki` stays the same for a page authored outside an
   ingest, and that the page's log entry records where it actually came from.
