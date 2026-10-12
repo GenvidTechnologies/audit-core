@@ -2,9 +2,7 @@
 // the gvt-dev plugin's audit-conventions skill (#457), against the seam pinned
 // by ADR-0057 in that repo.
 //
-// This barrel re-exports only. It holds no logic of its own, so the modules
-// beside it stay byte-identical to their gvt-dev originals while both copies
-// exist, which is what bounds drift until the plugin imports from here (#458).
+// This barrel re-exports only. It holds no logic of its own.
 //
 // The library is deliberately silent: it must not log, must not write files,
 // and must not read process.env. It emits expectation records and nothing else

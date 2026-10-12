@@ -16,6 +16,15 @@ While the package is at `0.x`, a breaking change to the public API takes a
   is pinned in this repo's own CI
   ([GenvidTechnologies/audit-core#13](https://github.com/GenvidTechnologies/audit-core/issues/13)).
 
+### Removed
+
+- `test/upstream-identity.test.mjs` and the rule that kept the five `src/`
+  modules byte-identical to `gvt-dev`'s copies. They are retired because
+  `gvt-dev` now consumes this package and has deleted its copies
+  ([GenvidTechnologies/claude-code-plugin-gvt-dev#458](https://github.com/GenvidTechnologies/claude-code-plugin-gvt-dev/issues/458)),
+  so `npm test` no longer makes network calls
+  ([GenvidTechnologies/audit-core#14](https://github.com/GenvidTechnologies/audit-core/issues/14)).
+
 ## [0.2.1] - 2026-09-25
 
 ### Added

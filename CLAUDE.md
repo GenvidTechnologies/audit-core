@@ -11,8 +11,10 @@ modules (`frontmatter.mjs`, `config-resolve.mjs`, `probes.mjs`,
 `component-walk.mjs`, `evaluate.mjs`) plus the re-export barrel
 `src/index.mjs`, closing
 [GenvidTechnologies/claude-code-plugin-gvt-dev#457](https://github.com/GenvidTechnologies/claude-code-plugin-gvt-dev/issues/457),
-whose seam is pinned by ADR-0057 in that repo. `README.md`'s API surface
-section documents the 12-name barrel.
+whose seam is pinned by ADR-0057 in that repo. The `gvt-dev` plugin now
+consumes this package and has deleted its own copies
+([#458](https://github.com/GenvidTechnologies/claude-code-plugin-gvt-dev/issues/458)).
+`README.md`'s API surface section documents the 12-name barrel.
 
 ## Package shape
 
@@ -40,19 +42,12 @@ This deliberately differs from the sibling leaf libraries
 which are TypeScript packages that build to `dist/`. Don't port their layout
 here (see ADR-0051 in the `gvt-dev` plugin repo).
 
-**The five `.mjs` modules in `src/` are byte-identical to their `gvt-dev`
-originals, and must stay that way while both copies exist** — that's what
-bounds drift until the plugin itself imports from this package (#458). Don't
-edit them for any reason, including a header comment or a reformat; a change
-that's genuinely needed belongs in the `gvt-dev` plugin first, then gets
-re-extracted here. `test/upstream-identity.test.mjs` enforces this in two
-tiers: `src/` worktree and index vs. a committed `RECORD` of git blob SHAs
-(offline, never skips), and `RECORD` vs. gvt-dev at a pinned commit (`PIN`,
-the PR #551 merge) fetched from raw.githubusercontent.com (skips with a named
-reason when unreachable). A legitimate re-extraction bumps `PIN` and `RECORD`
-in the same commit as the copy. It retires itself (skips) once
-GenvidTechnologies/claude-code-plugin-gvt-dev#458 closes as completed, at
-which point the test and this frozen-module rule are deleted.
+**`src/` is this repo's own code and is edited here.** The `gvt-dev` plugin
+consumes it through its `#audit-core` import map
+(GenvidTechnologies/claude-code-plugin-gvt-dev#458; gvt-dev ADR-0071) and no
+longer carries copies of these modules. gvt-dev pins an exact version of this
+package, so a `src/` change reaches the plugin only after a release here plus
+a pin bump in gvt-dev.
 
 `yaml` is a declared dependency but currently **unused** — see "Package
 shape" in `README.md` for why — and there is deliberately **no `@genvidtech`
@@ -67,7 +62,7 @@ Node >= 22.
 | --- | --- |
 | Lint | `npm run lint` (eslint) |
 | Typecheck | `npm run typecheck` (`tsc --noEmit`, checks the hand-written `.d.ts`) — the root `tsconfig.json` is `include: ["src"]` with `checkJs: false`, so this does **not** cover `test/signature.test.mjs`; signature drift is caught by `npm test`, not here |
-| Test | `npm test` (`node --test`; includes the `tsc`-backed signature typecheck spawned from `test/signature-guard.test.mjs`). Not fully offline: `test/upstream-identity.test.mjs` fetches from `raw.githubusercontent.com` and reads gvt-dev#458 from `api.github.com` (unauthenticated, 60 requests/hour). Offline or rate-limited, its upstream tier skips with a named reason and the run still exits 0; only a real divergence fails |
+| Test | `npm test` (`node --test`; includes the `tsc`-backed signature typecheck spawned from `test/signature-guard.test.mjs`) |
 | Build | `npm run build` — a **documented no-op**; it exists only because the shared CI gate runs all four scripts unconditionally |
 | Validate | `npm run lint && npm run typecheck && npm test` |
 
