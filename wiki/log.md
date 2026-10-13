@@ -21,8 +21,8 @@ the full maintenance schema.
   the `fileExists` stat-skip as intended with the corrected behaviour, and
   added "Walk pre-filters (audit-core#19)": `walkComponents` follows symlinks
   and junctions, records non-absent `stat` failures and dangling links
-  (`ENOENT`, confirmed via `lstat` because Windows reports them as plain
-  `ENOENT`) as `UnreadableComponent`s, and records an unreadable `skills/` or
+  (confirmed via `lstat`, because Windows reports them as plain `ENOENT`) as
+  `UnreadableComponent`s, and records an unreadable `skills/` or
   `agents/` tree as a tree-level record rather than a throw (ADR-0057 Q2).
   `evaluateFile`'s matching flaw is carved out for a separate follow-up issue.
   Driven by https://github.com/GenvidTechnologies/audit-core/issues/19.

@@ -88,9 +88,10 @@ The package barrel (`src/index.mjs`) re-exports 12 names.
   read is neither skipped nor thrown: it is passed through as an
   `UnreadableComponent` carrying `readError`. That includes a non-absent
   `stat` failure on a component file and a dangling link (`readError.code`
-  `'ENOENT'`). A `skills/` or `agents/` tree that can't be stat'd or listed
-  yields one `UnreadableComponent` named `'skills/'` or `'agents/'`; an
-  absent tree is still silently empty. Likewise a file whose
+  is `stat`'s own code, `'ENOENT'` for a missing target). A `skills/` or
+  `agents/` tree that can't be stat'd or listed yields one
+  `UnreadableComponent` named `'skills/'` or `'agents/'`; a tree that is
+  absent or not a directory is still silently empty. Likewise a file whose
   frontmatter does not parse is passed through as a `MalformedComponent`
   carrying `parseError`. The only throw is the `TypeError` for a non-string
   `pluginRoot`.

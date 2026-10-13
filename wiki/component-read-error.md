@@ -128,11 +128,12 @@ anything[^issue-19]. The walk now classifies paths itself:
   can't be stat'd or listed (including a `readdir` failure) yields an
   `UnreadableComponent` named `'skills/'` or `'agents/'`. A throw would fail
   the whole walk, and ADR-0057 Q2 permits only the caller-contract
-  `TypeError`. An absent tree still yields nothing.
-- **Dangling link = `ENOENT`, via `lstat`.** Windows reports a dangling link
-  as plain `ENOENT` from `stat`, indistinguishable from absence. An `ENOENT`
-  is therefore confirmed with `lstat`: if the link itself exists, the
-  component is unreadable with code `'ENOENT'`; if not, it is absent.
+  `TypeError`. A tree that is absent or not a directory still yields nothing.
+- **Dangling links are confirmed with `lstat`.** Windows reports a dangling
+  link as plain `ENOENT` from `stat`, indistinguishable from absence. An
+  absence code (`ENOENT`/`ENOTDIR`) is therefore confirmed with `lstat`: if
+  the link itself exists, the component is unreadable and carries `stat`'s
+  own code (`'ENOENT'` for a missing target); if not, it is absent.
 - **`fileExists`/`dirExists` are unchanged**, as is `evaluateFile`, which has
   the same flaw (a non-ENOENT `stat` failure reads as "not found"). That is
   deliberately left for a separate follow-up issue.

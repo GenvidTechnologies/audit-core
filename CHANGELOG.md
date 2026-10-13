@@ -17,10 +17,11 @@ While the package is at `0.x`, a breaking change to the public API takes a
   skipped like the real shape.
 - `walkComponents` no longer skips a component whose `stat` fails for a reason
   other than absence (such as `EACCES`), nor a dangling link. Each now yields
-  an `UnreadableComponent` with `readError` (a dangling link reports code
-  `'ENOENT'`). A `skills/` or `agents/` tree that can't be stat'd or listed
-  yields an `UnreadableComponent` named `'skills/'` or `'agents/'`; absent
-  trees are still silently empty
+  an `UnreadableComponent` with `readError` (a dangling link carries `stat`'s
+  own code, `'ENOENT'` for a missing target). A `skills/` or `agents/` tree
+  that can't be stat'd or listed yields an `UnreadableComponent` named
+  `'skills/'` or `'agents/'`; a tree that is absent or not a directory is
+  still silently empty
   ([GenvidTechnologies/audit-core#19](https://github.com/GenvidTechnologies/audit-core/issues/19)).
 - **Consumer warning:** code that skips a component whose `expects` is null
   (for example `if (!component.expects) continue`) will silently drop these

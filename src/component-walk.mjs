@@ -81,7 +81,7 @@ async function probePath(path) {
       if (ABSENT_CODES.has(lerr?.code)) return { kind: 'absent' };
       return { kind: 'error', error: lerr };
     }
-    // lstat succeeded: a dangling link. Report stat's ENOENT.
+    // lstat succeeded: a dangling link. Report stat's own error.
     return { kind: 'error', error: err };
   }
 }
