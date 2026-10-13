@@ -154,11 +154,13 @@ test('loadComponent: NO_FRONTMATTER agrees with extractFrontmatter === null acro
     ['BOM before fence', '\uFEFF---\na: 1\n---\n'],
     ['leading blank line', '\n---\na: 1\n---\n'],
     ['unclosed fence', '---\na: 1\n'],
+    ['CRLF leading blank line', '\r\n---\r\na: 1\r\n---\r\n'],
   ];
   const clean = [
     ['blank line between fences', '---\n\n---\n'],
     ['comment-only block', '---\n# only a comment\n---\n'],
     ['valid block', '---\na: 1\n---\nbody\n'],
+    ['CRLF valid block', '---\r\na: 1\r\n---\r\nbody\r\n'],
   ];
   const dir = await withTempRepo(async () => {});
   try {

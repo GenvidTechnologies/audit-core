@@ -118,6 +118,7 @@ frontmatter still returns the four-key `frontmatter: null` shape. Malformed
 frontmatter (audit-core#4) would get a sibling union member, for example
 `parseError`, with the same `expects: null, frontmatter: null` defaults,
 rather than overloading `readError`.
+
 *Since:* audit-core#23 superseded the no-frontmatter clause[^issue-23]: a file
 with no frontmatter block now resolves to a `MalformedComponent` with
 `parseError.code` `NO_FRONTMATTER`. See
