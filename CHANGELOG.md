@@ -9,7 +9,25 @@ While the package is at `0.x`, a breaking change to the public API takes a
 
 ## [Unreleased]
 
+### Added
+
+- `probePath(path)` export, returning a `PathProbe` (`file`, `directory`,
+  `other`, `absent` or `error`) so callers can tell absence from a `stat`
+  failure. It never rejects. `fileExists`/`dirExists` are unchanged. The barrel
+  now re-exports 13 names
+  ([GenvidTechnologies/audit-core#20](https://github.com/GenvidTechnologies/audit-core/issues/20)).
+
 ### Fixed
+
+- Consumer-visible: the `detail` text of an unsatisfied `evaluateFile`
+  finding changes. Every unsatisfied path used to read `<probe> not found`,
+  which told the user to create something that might already exist. Absence
+  still reads that way, but an unexaminable path (such as `EACCES` or
+  `ELOOP`) now reads `<probe> could not be checked (<code>)`, a dangling
+  link `... could not be checked (dangling link, <code>)`, and a wrong-kind
+  path `expected a <probe>, found a <kind>` (or `found neither a file nor a
+  directory`). Severity, `ok`, the finding shape and the exit code do not change
+  ([GenvidTechnologies/audit-core#20](https://github.com/GenvidTechnologies/audit-core/issues/20)).
 
 - `walkComponents` follows symlinks: a symlinked skill directory (including a
   Windows junction) or a symlinked agent `.md` file is loaded like its target,

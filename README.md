@@ -37,7 +37,7 @@ package's only runtime dependency.
 
 ## API surface
 
-The package barrel (`src/index.mjs`) re-exports 12 names.
+The package barrel (`src/index.mjs`) re-exports 13 names.
 
 ### Version
 
@@ -73,6 +73,18 @@ The package barrel (`src/index.mjs`) re-exports 12 names.
   `stat` failure, not only absence.
 - `dirExists(path: string): Promise<boolean>` — true only for a directory;
   likewise `false` on any `stat` failure.
+- `probePath(path: string): Promise<PathProbe>` — classifies what is at a
+  path, for callers that need to tell absence from failure (which
+  `fileExists`/`dirExists` cannot). It never rejects. `PathProbe` is one of:
+  - `{ kind: 'file' }`, `{ kind: 'directory' }`, or `{ kind: 'other' }` (a
+    path that exists but is neither, such as a socket or FIFO);
+  - `{ kind: 'absent' }` — nothing at the path, not even a dangling link
+    (`stat` reported `ENOENT`/`ENOTDIR` and `lstat` confirmed it);
+  - `{ kind: 'error', error: PathProbeError }` — any other `stat` failure
+    (such as `EACCES`), a dangling link (carrying `stat`'s own code, e.g.
+    `'ENOENT'`), or an `lstat` failure that is not an absence.
+    `PathProbeError` is `{ code: string | null, message: string }`, where
+    `code` is the Node error code or `null`.
 - `commandExists(cmd: string): boolean` — synchronous; shells out to
   `where`/`which` depending on platform.
 
@@ -113,15 +125,29 @@ The package barrel (`src/index.mjs`) re-exports 12 names.
 ### Evaluation
 
 - `evaluateFile(component, entry, resolve): Promise<ExpectationFinding>` —
-  evaluates one `metadata.expects.files[]` entry.
+  evaluates one `metadata.expects.files[]` entry, probing the path with
+  `probePath`. An unsatisfied finding's `detail` takes one of four forms
+  (each gets an ` (optional)` suffix when the entry is not required):
+  - absent: `<probe> not found`
+  - unexaminable: `<probe> could not be checked (<code>)`, falling back to
+    the error message when there is no code
+  - dangling link: `<probe> could not be checked (dangling link, <code>)`
+  - wrong kind: `expected a <probe>, found a <kind>`, or `expected a <probe>,
+    found neither a file nor a directory`
+
+  It says "could not be checked" rather than "exists" because an `EACCES`
+  from `stat` usually comes from an unsearchable parent directory, so
+  existence is unknown. `ok`, `severity`, the finding shape and the exit code
+  do not depend on which form is used.
 - `evaluateConfig(component, entry, resolve): Promise<ExpectationFinding>` —
   evaluates one `metadata.expects.config[]` entry against a JSON file.
 - `evaluateTool(component, entry): ExpectationFinding` — evaluates one
   `metadata.expects.tools[]` entry (synchronous — no filesystem read).
 
 None of the three evaluators throw for an expected condition (a missing
-file/directory, an unreadable or malformed config, an unresolvable key, or a
-command absent from `PATH`) — each returns a finding instead. The loaders
+file/directory, any other `stat` outcome on a file expectation, an
+unreadable or malformed config, an unresolvable key, or a command absent
+from `PATH`) — each returns a finding instead. The loaders
 follow the same rule for I/O and for parsing: a file that can't be read
 becomes a `readError` on the returned component, and one whose frontmatter
 doesn't parse becomes a `parseError`, not a rejection. Both leave

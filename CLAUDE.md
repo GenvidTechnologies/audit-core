@@ -15,7 +15,7 @@ modules (`frontmatter.mjs`, `config-resolve.mjs`, `probes.mjs`,
 whose seam is pinned by ADR-0057 in that repo. The `gvt-dev` plugin now
 consumes this package and has deleted its own copies
 ([#458](https://github.com/GenvidTechnologies/claude-code-plugin-gvt-dev/issues/458)).
-`README.md`'s API surface section documents the 12-name barrel.
+`README.md`'s API surface section documents the 13-name barrel.
 
 ## Package shape
 
