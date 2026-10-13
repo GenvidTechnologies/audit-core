@@ -182,6 +182,12 @@ was when captured.
   numbers, and in-repo paths, never at a session-local path (a scratchpad or
   temp directory): that file is gone once the session ends, so the pointer
   can't be followed. Transcribe the content into the capture instead.
+- **Name the tree the measurement ran on.** A capture's commit is the one
+  checked out when the probe ran, not the branch HEAD at the time the capture
+  is written up. Where the result doesn't depend on this repo's code (a
+  platform `stat` probe), say that too. A capture planned on `main` and
+  written up mid-branch is where the two get confused, and since `raw/` is
+  never edited, a wrong commit can't be fixed later.
 - This is what makes `<wikiDir>/` pages re-verifiable: every claim traces back to
   an immutable file, not a source that may have moved on since.
 
