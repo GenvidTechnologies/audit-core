@@ -284,3 +284,254 @@ test('loadComponent: a yaml exception (unresolved alias) resolves with parseErro
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+// --- #19: stat failures and symlinked components ------------------------------
+
+const FM19 = (name) => `---\nname: ${name}\ndescription: x\n---\nbody\n`;
+
+const summarize = (cs) => cs.map((c) => [c.type, c.name, c.readError?.code ?? null]);
+
+function eacces() {
+  const err = new Error('permission denied');
+  err.code = 'EACCES';
+  return err;
+}
+
+// Creates a symlink; skips the calling test (returns false) only when Windows
+// refuses symlink creation for lack of privilege. Any other failure is a real
+// error and is rethrown. Targets must be absolute (junctions require it); the
+// 'junction' type is ignored off Windows.
+async function symlinkOrSkip(t, target, path, type) {
+  try {
+    await promises.symlink(target, path, type);
+    return true;
+  } catch (err) {
+    if (process.platform === 'win32' && err.code === 'EPERM') {
+      t.skip('symlink creation needs privilege on this Windows machine');
+      return false;
+    }
+    throw err;
+  }
+}
+
+test('walkComponents (#19): stat EACCES on SKILL.md', async (t) => {
+  const dir = await withTempRepo(async (d) => {
+    await writeRepoFile(d, 'skills/s1/SKILL.md', FM19('s1'));
+    await writeRepoFile(d, 'agents/a1.md', FM19('a1'));
+  });
+  try {
+    const target = join(dir, 'skills', 's1', 'SKILL.md');
+    const original = promises.stat;
+    // Reaches component-walk.mjs only through `fs.stat` on the promises
+    // object; a named `stat` import would bypass it and this test would fail.
+    const mock = t.mock.method(promises, 'stat', async (path, ...rest) => {
+      if (path === target) throw eacces();
+      return original(path, ...rest);
+    });
+    assert.deepEqual(summarize(await walkComponents(dir)), [['skill', 's1', 'EACCES'], ['agent', 'a1', null]]);
+    assert.ok(mock.mock.calls.some((call) => call.arguments[0] === target));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('walkComponents (#19): stat EACCES on skills/', async (t) => {
+  const dir = await withTempRepo(async (d) => {
+    await writeRepoFile(d, 'skills/s1/SKILL.md', FM19('s1'));
+    await writeRepoFile(d, 'agents/a1.md', FM19('a1'));
+  });
+  try {
+    const target = join(dir, 'skills');
+    const original = promises.stat;
+    const mock = t.mock.method(promises, 'stat', async (path, ...rest) => {
+      if (path === target) throw eacces();
+      return original(path, ...rest);
+    });
+    assert.deepEqual(summarize(await walkComponents(dir)), [['skill', 'skills/', 'EACCES'], ['agent', 'a1', null]]);
+    assert.ok(mock.mock.calls.some((call) => call.arguments[0] === target));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('walkComponents (#19): readdir EACCES on agents/', async (t) => {
+  const dir = await withTempRepo(async (d) => {
+    await writeRepoFile(d, 'skills/s1/SKILL.md', FM19('s1'));
+    await writeRepoFile(d, 'agents/a1.md', FM19('a1'));
+  });
+  try {
+    const target = join(dir, 'agents');
+    const original = promises.readdir;
+    const mock = t.mock.method(promises, 'readdir', async (path, ...rest) => {
+      if (path === target) throw eacces();
+      return original(path, ...rest);
+    });
+    assert.deepEqual(summarize(await walkComponents(dir)), [['skill', 's1', null], ['agent', 'agents/', 'EACCES']]);
+    assert.ok(mock.mock.calls.some((call) => call.arguments[0] === target));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('walkComponents (#19): lstat failure after ENOENT', async (t) => {
+  const dir = await withTempRepo(async (d) => {
+    await writeRepoFile(d, 'skills/s1/SKILL.md', FM19('s1'));
+    await mkdir(join(d, 'skills', 's2'), { recursive: true });
+    await writeRepoFile(d, 'agents/a1.md', FM19('a1'));
+  });
+  try {
+    const target = join(dir, 'skills', 's2', 'SKILL.md');
+    const original = promises.lstat;
+    const mock = t.mock.method(promises, 'lstat', async (path, ...rest) => {
+      if (path === target) throw eacces();
+      return original(path, ...rest);
+    });
+    assert.deepEqual(summarize(await walkComponents(dir)), [
+      ['skill', 's1', null],
+      ['skill', 's2', 'EACCES'],
+      ['agent', 'a1', null],
+    ]);
+    assert.ok(mock.mock.calls.some((call) => call.arguments[0] === target));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('walkComponents (#19): symlinked skill dir, junction and agent are followed', async (t) => {
+  const dir = await withTempRepo(async (d) => {
+    await writeRepoFile(d, 'ext/skillTarget/SKILL.md', FM19('linked'));
+    await writeRepoFile(d, 'ext/agentTarget.md', FM19('agentlinked'));
+    await writeRepoFile(d, 'plugin/skills/real/SKILL.md', FM19('real'));
+    await mkdir(join(d, 'plugin', 'agents'), { recursive: true });
+  });
+  try {
+    const plugin = join(dir, 'plugin');
+    const skillTarget = join(dir, 'ext', 'skillTarget');
+    if (!(await symlinkOrSkip(t, skillTarget, join(plugin, 'skills', 'symdir'), 'dir'))) return;
+    if (!(await symlinkOrSkip(t, skillTarget, join(plugin, 'skills', 'junc'), 'junction'))) return;
+    if (!(await symlinkOrSkip(t, join(dir, 'ext', 'agentTarget.md'), join(plugin, 'agents', 'symagent.md'), 'file'))) return;
+    const components = await walkComponents(plugin);
+    const byName = Object.fromEntries(components.map((c) => [c.name, c]));
+    assert.deepEqual(Object.keys(byName).sort(), ['junc', 'real', 'symagent', 'symdir']);
+    assert.equal(byName.real.frontmatter.name, 'real');
+    assert.equal(byName.symdir.frontmatter.name, 'linked');
+    assert.equal(byName.junc.frontmatter.name, 'linked');
+    assert.equal(byName.symagent.frontmatter.name, 'agentlinked');
+    assert.equal(byName.symagent.type, 'agent');
+    for (const c of components) {
+      assert.equal('readError' in c, false, c.name);
+      assert.equal('parseError' in c, false, c.name);
+    }
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('walkComponents (#19): dangling skill entry', async (t) => {
+  const dir = await withTempRepo(async (d) => {
+    await mkdir(join(d, 'skills'), { recursive: true });
+  });
+  try {
+    const skills = join(dir, 'skills');
+    if (!(await symlinkOrSkip(t, join(dir, 'nope'), join(skills, 'dangdir'), 'dir'))) return;
+    if (!(await symlinkOrSkip(t, join(dir, 'nope2'), join(skills, 'dangjunc'), 'junction'))) return;
+    assert.deepEqual(summarize(await walkComponents(dir)).sort(), [
+      ['skill', 'dangdir', 'ENOENT'],
+      ['skill', 'dangjunc', 'ENOENT'],
+    ]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('walkComponents (#19): dangling SKILL.md', async (t) => {
+  const dir = await withTempRepo(async (d) => {
+    await mkdir(join(d, 'skills', 'innerdang'), { recursive: true });
+  });
+  try {
+    const link = join(dir, 'skills', 'innerdang', 'SKILL.md');
+    if (!(await symlinkOrSkip(t, join(dir, 'gone.md'), link, 'file'))) return;
+    assert.deepEqual(summarize(await walkComponents(dir)), [['skill', 'innerdang', 'ENOENT']]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('walkComponents (#19): dangling agent', async (t) => {
+  const dir = await withTempRepo(async (d) => {
+    await mkdir(join(d, 'agents'), { recursive: true });
+  });
+  try {
+    const link = join(dir, 'agents', 'dangagent.md');
+    if (!(await symlinkOrSkip(t, join(dir, 'nope.md'), link, 'file'))) return;
+    assert.deepEqual(summarize(await walkComponents(dir)), [['agent', 'dangagent', 'ENOENT']]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('walkComponents (#19): SKILL.md symlink loop', async (t) => {
+  const dir = await withTempRepo(async (d) => {
+    await mkdir(join(d, 'skills', 'loop'), { recursive: true });
+  });
+  try {
+    const loop = join(dir, 'skills', 'loop');
+    if (!(await symlinkOrSkip(t, join(loop, 'B.md'), join(loop, 'SKILL.md'), 'file'))) return;
+    if (!(await symlinkOrSkip(t, join(loop, 'SKILL.md'), join(loop, 'B.md'), 'file'))) return;
+    assert.deepEqual(summarize(await walkComponents(dir)), [['skill', 'loop', 'ELOOP']]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('walkComponents (#19): symlinked non-component shapes are skipped', async (t) => {
+  const dir = await withTempRepo(async (d) => {
+    await mkdir(join(d, 'ext', 'emptyTarget'), { recursive: true });
+    await writeRepoFile(d, 'ext/file.txt', 'x');
+    await mkdir(join(d, 'plugin', 'skills'), { recursive: true });
+    await mkdir(join(d, 'plugin', 'agents'), { recursive: true });
+  });
+  try {
+    const plugin = join(dir, 'plugin');
+    const empty = join(dir, 'ext', 'emptyTarget');
+    if (!(await symlinkOrSkip(t, empty, join(plugin, 'skills', 'symempty'), 'dir'))) return;
+    if (!(await symlinkOrSkip(t, join(dir, 'ext', 'file.txt'), join(plugin, 'skills', 'filelink'), 'file'))) return;
+    if (!(await symlinkOrSkip(t, empty, join(plugin, 'agents', 'x.md'), 'dir'))) return;
+    assert.deepEqual(await walkComponents(plugin), []);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('walkComponents (#19): SKILL.md symlink inside a real dir is loaded', async (t) => {
+  const dir = await withTempRepo(async (d) => {
+    await writeRepoFile(d, 'ext/SKILL.md', FM19('innerlinked'));
+    await mkdir(join(d, 'plugin', 'skills', 'innerlink'), { recursive: true });
+  });
+  try {
+    const link = join(dir, 'plugin', 'skills', 'innerlink', 'SKILL.md');
+    if (!(await symlinkOrSkip(t, join(dir, 'ext', 'SKILL.md'), link, 'file'))) return;
+    const components = await walkComponents(join(dir, 'plugin'));
+    assert.equal(components.length, 1);
+    assert.equal(components[0].name, 'innerlink');
+    assert.equal(components[0].frontmatter.name, 'innerlinked');
+    assert.equal('readError' in components[0], false);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('walkComponents (#19): dangling skills/ tree', async (t) => {
+  const dir = await withTempRepo(async (d) => {
+    await mkdir(join(d, 'dangling'), { recursive: true });
+    await writeRepoFile(d, 'filetree/skills', 'x');
+  });
+  try {
+    if (!(await symlinkOrSkip(t, join(dir, 'none'), join(dir, 'dangling', 'skills'), 'dir'))) return;
+    assert.deepEqual(summarize(await walkComponents(join(dir, 'dangling'))), [['skill', 'skills/', 'ENOENT']]);
+    assert.deepEqual(await walkComponents(join(dir, 'filetree')), []);
+    assert.deepEqual(await walkComponents(join(dir, 'missing-root')), []);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
