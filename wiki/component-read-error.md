@@ -20,6 +20,10 @@ sources:
     resource: https://github.com/GenvidTechnologies/audit-core/issues/19
     title: "audit-core#19 — walkComponents silently skips components whose stat fails or that are symlinks"
     last_modified: 2026-10-13
+  - id: issue-20
+    resource: https://github.com/GenvidTechnologies/audit-core/issues/20
+    title: "audit-core#20 — evaluateFile reports a non-ENOENT stat failure as \"not found\""
+    last_modified: 2026-10-13
 ---
 
 # Component read-error shape
