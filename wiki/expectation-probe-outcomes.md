@@ -115,11 +115,12 @@ measured**; CI is `ubuntu-latest` only.
 Consequence: gvt-dev's `audit-main.mjs` `located()` keeps the trailing slash of
 a directory expectation such as `docs/decisions/` in the probed path. On
 Windows a file at that path reports `expected a directory, found a file`; on
-POSIX it is expected to report `directory not found`. Follow-ups are owed in
-`GenvidTechnologies/claude-code-plugin-gvt-dev`: `resolveFile`'s `prefer` loop
-should adopt `probePath` and strip the trailing slash before probing, and
-CONVENTIONS.md's trailing-slash paragraph promises `directory not found`. No
-issues are filed for these yet.
+POSIX it is expected to report `directory not found`. Two follow-ups are filed
+in `GenvidTechnologies/claude-code-plugin-gvt-dev`: `resolveFile`'s `prefer`
+loop should adopt `probePath` and strip the trailing slash before probing
+(gvt-dev#671[^gvt-dev-671]), and CONVENTIONS.md's trailing-slash paragraph,
+which promises `directory not found`, should be reworded after that
+(gvt-dev#672[^gvt-dev-672]).
 
 ## Related
 
@@ -130,3 +131,5 @@ issues are filed for these yet.
 
 [^issue-20]: audit-core#20, https://github.com/GenvidTechnologies/audit-core/issues/20.
 [^raw-capture]: `raw/2026-10-13-trailing-separator-stat.md` (Windows 11, Node v24.11.1; POSIX unmeasured).
+[^gvt-dev-671]: gvt-dev#671, https://github.com/GenvidTechnologies/claude-code-plugin-gvt-dev/issues/671.
+[^gvt-dev-672]: gvt-dev#672, https://github.com/GenvidTechnologies/claude-code-plugin-gvt-dev/issues/672.
