@@ -21,6 +21,20 @@ export declare function resolveKey(obj: unknown, dottedKey: string): KeyResoluti
 
 export declare function fileExists(path: string): Promise<boolean>;
 export declare function dirExists(path: string): Promise<boolean>;
+// `error` carries the code and message of the failed stat (or lstat) call.
+export interface PathProbeError { code: string | null; message: string }
+// What is at a path. `absent` means nothing -- not even a dangling link -- is
+// there (ENOENT/ENOTDIR from stat, confirmed by lstat). `other` is anything
+// that is neither a regular file nor a directory. A dangling link is `error`
+// carrying stat's own code (e.g. 'ENOENT'), not `absent`.
+export type PathProbe =
+  | { kind: 'file' }
+  | { kind: 'directory' }
+  | { kind: 'other' }
+  | { kind: 'absent' }
+  | { kind: 'error'; error: PathProbeError };
+// Never rejects: every failure is reported as `{ kind: 'error' }`.
+export declare function probePath(path: string): Promise<PathProbe>;
 export declare function commandExists(cmd: string): boolean;
 
 export type ComponentType = 'skill' | 'agent';
@@ -97,6 +111,12 @@ export interface ConfigResolution { path: string; source: string;              t
 export type FileResolver   = (entry: ExpectsFileEntry)   => FileResolution;
 export type ConfigResolver = (entry: ExpectsConfigEntry) => ConfigResolution;
 
+// An unsatisfied file finding's `detail` takes one of these forms, with
+// ` (optional)` appended when the entry is not required:
+//   `<probe> not found`
+//   `<probe> could not be checked (<code>)`
+//   `<probe> could not be checked (dangling link, <code>)`
+//   `expected a <probe>, found a <kind>` / `found neither a file nor a directory`
 export declare function evaluateFile(component: Component, entry: ExpectsFileEntry, resolve: FileResolver): Promise<ExpectationFinding>;
 export declare function evaluateConfig(component: Component, entry: ExpectsConfigEntry, resolve: ConfigResolver): Promise<ExpectationFinding>;
 export declare function evaluateTool(component: Component, entry: ExpectsToolEntry): ExpectationFinding;

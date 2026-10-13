@@ -18,7 +18,7 @@
 //
 // Imports by the published package name, not a relative src/ path, so the
 // self-reference exercises the same `exports` map a real consumer resolves
-// through -- confirmed at runtime to yield the 12-name barrel.
+// through -- confirmed at runtime to yield the 13-name barrel.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -42,6 +42,8 @@ const {
  * @typedef {import('@genvidtech/audit-core').KeyResolution} KeyResolution
  * @typedef {import('@genvidtech/audit-core').ComponentType} ComponentType
  * @typedef {import('@genvidtech/audit-core').Expects} Expects
+ * @typedef {import('@genvidtech/audit-core').PathProbe} PathProbe
+ * @typedef {import('@genvidtech/audit-core').PathProbeError} PathProbeError
  * @typedef {import('@genvidtech/audit-core').Component} Component
  * @typedef {import('@genvidtech/audit-core').UnreadableComponent} UnreadableComponent
  * @typedef {import('@genvidtech/audit-core').MalformedComponent} MalformedComponent
@@ -60,8 +62,8 @@ const {
  */
 
 // 1. Arity -- tsc pins each literal to the .d.ts parameter list; node pins
-//    fn.length to the .mjs. One assertion per exported function (11 of the
-//    barrel's 12 exports; VERSION is the twelfth, a string, not a function).
+//    fn.length to the .mjs. One assertion per exported function (12 of the
+//    barrel's 13 exports; VERSION is the thirteenth, a string, not a function).
 test('exported function arity matches the declared parameter count in src/index.d.ts', () => {
   /** @type {Parameters<typeof extractFrontmatter>['length']} */
   const A_extractFrontmatter = 1;
@@ -82,6 +84,10 @@ test('exported function arity matches the declared parameter count in src/index.
   /** @type {Parameters<typeof audit.dirExists>['length']} */
   const A_dirExists = 1;
   assert.equal(audit.dirExists.length, A_dirExists);
+
+  /** @type {Parameters<typeof audit.probePath>['length']} */
+  const A_probePath = 1;
+  assert.equal(audit.probePath.length, A_probePath);
 
   /** @type {Parameters<typeof commandExists>['length']} */
   const A_commandExists = 1;
@@ -111,7 +117,7 @@ test('exported function arity matches the declared parameter count in src/index.
 // 2. Completeness guard -- a newly-declared export fails here until this
 //    fixture is updated to cover it, and `keyof typeof import(...)` is pinned
 //    by tsc against the actual barrel type, not a hand-copied list.
-test('barrel exports exactly the 12 names declared in src/index.d.ts (completeness guard)', () => {
+test('barrel exports exactly the 13 names declared in src/index.d.ts (completeness guard)', () => {
   /** @type {Record<keyof typeof import('@genvidtech/audit-core'), true>} */
   const COVERED = {
     VERSION: true,
@@ -120,6 +126,7 @@ test('barrel exports exactly the 12 names declared in src/index.d.ts (completene
     resolveKey: true,
     fileExists: true,
     dirExists: true,
+    probePath: true,
     commandExists: true,
     walkComponents: true,
     loadComponent: true,
@@ -360,6 +367,31 @@ test('fileExists, dirExists, walkComponents, and loadComponent return their decl
     /** @type {boolean} */
     const dirExistsResult = await dirExistsPromise;
     assert.equal(dirExistsResult, true);
+
+    /** @type {Promise<PathProbe>} */
+    const probeFilePromise = audit.probePath(probeFile);
+    /** @type {PathProbe} */
+    const probeFileResult = await probeFilePromise;
+    assert.equal(probeFileResult.kind, 'file');
+
+    /** @type {Promise<PathProbe>} */
+    const probeErrorPromise = audit.probePath(join(probeFile, 'child'));
+    /** @type {PathProbe} */
+    const probeErrorResult = await probeErrorPromise;
+    // ENOTDIR from stat is confirmed absent by lstat; a NUL byte makes both
+    // fail, which exercises the 'error' branch and PathProbeError.
+    /** @type {PathProbe} */
+    const nulResult = await audit.probePath(`${probeFile}\0x`);
+    assert.equal(probeErrorResult.kind, 'absent');
+    if (nulResult.kind !== 'error') throw new Error('expected an error probe');
+    /** @type {PathProbeError} */
+    const probeError = nulResult.error;
+    /** @type {string | null} */
+    const probeCode = probeError.code;
+    assert.equal(typeof probeCode, 'string');
+    /** @type {string} */
+    const probeMessage = probeError.message;
+    assert.equal(typeof probeMessage, 'string');
 
     const skillsDir = join(dir, 'skills', 'sample-skill');
     await mkdir(skillsDir, { recursive: true });
