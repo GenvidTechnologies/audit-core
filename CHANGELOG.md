@@ -9,6 +9,25 @@ While the package is at `0.x`, a breaking change to the public API takes a
 
 ## [Unreleased]
 
+### Fixed
+
+- `walkComponents` follows symlinks: a symlinked skill directory (including a
+  Windows junction) or a symlinked agent `.md` file is loaded like its target,
+  where before it was skipped. A link to a non-component shape is still
+  skipped like the real shape.
+- `walkComponents` no longer skips a component whose `stat` fails for a reason
+  other than absence (such as `EACCES`), nor a dangling link. Each now yields
+  an `UnreadableComponent` with `readError` (a dangling link carries `stat`'s
+  own code, `'ENOENT'` for a missing target). A `skills/` or `agents/` tree
+  that can't be stat'd or listed yields an `UnreadableComponent` named
+  `'skills/'` or `'agents/'`; a tree that is absent or not a directory is
+  still silently empty
+  ([GenvidTechnologies/audit-core#19](https://github.com/GenvidTechnologies/audit-core/issues/19)).
+- **Consumer warning:** code that skips a component whose `expects` is null
+  (for example `if (!component.expects) continue`) will silently drop these
+  new unreadable records, since they also have `expects: null`. Handle
+  `readError` explicitly.
+
 ## [0.3.0] - 2026-10-12
 
 ### Fixed

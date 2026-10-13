@@ -82,6 +82,11 @@ once that merges, the deviation count drops to zero.
 
 Keep that deviation when re-syncing a workflow from its template.
 
+The shared gate (`node-gate.yml` upstream) is a single `ubuntu-latest` job
+on Node 22; nothing runs on Windows. So Windows-only filesystem behaviour
+(junctions, a dangling link reporting `ENOENT` from `stat`) is verified only
+on a local Windows run. Say so in the PR, as #19 did.
+
 ## Releasing
 
 This package publishes to npmjs.com as `@genvidtech/audit-core` via

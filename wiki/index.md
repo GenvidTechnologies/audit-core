@@ -57,6 +57,10 @@ can't follow them (see the schema's wiki-links section):
   its GitHub issue backlog — the flat category-label set, why the structured
   taxonomy was rejected, and where the contract and access mechanics live.
 
+## Reference
+
+* [Windows filesystem semantics for the component walk](windows-fs-semantics.md) - Measured Node fs behaviour on Windows 11 (Node 24.11.1, Developer Mode, unelevated) for symlinks, junctions, dangling links, link loops and ACL denies, and what it means for walkComponents and fileExists; POSIX behaviour is not measured here.
+
 ## Decisions
 
 The architecture decisions governing this repo — ADR-0051 (no-build `.mjs`

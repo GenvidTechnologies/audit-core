@@ -7,7 +7,6 @@
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
 
-import { fileExists, dirExists } from './probes.mjs';
 import { readFrontmatter } from './frontmatter.mjs';
 
 export async function walkComponents(pluginRoot) {
@@ -17,29 +16,106 @@ export async function walkComponents(pluginRoot) {
 
   const components = [];
 
+  // Symlinked entries are followed (a Dirent for a link answers false to
+  // isDirectory/isFile). Any stat failure other than "nothing is there"
+  // surfaces as an unreadable record rather than a silent skip (#19).
   const skillsDir = join(pluginRoot, 'skills');
-  if (await dirExists(skillsDir)) {
-    const skills = await fs.readdir(skillsDir, { withFileTypes: true });
-    for (const entry of skills) {
-      if (!entry.isDirectory()) continue;
-      const skillFile = join(skillsDir, entry.name, 'SKILL.md');
-      if (!(await fileExists(skillFile))) continue;
-      // Unreadable and malformed components are passed through deliberately.
-      components.push(await loadComponent('skill', entry.name, skillFile));
+  for (const entry of await readTree('skill', skillsDir, 'skills/', components)) {
+    const entryPath = join(skillsDir, entry.name);
+    if (!entry.isDirectory()) {
+      if (!entry.isSymbolicLink()) continue;
+      const target = await probePath(entryPath);
+      if (target.kind === 'error') {
+        components.push(unreadable('skill', entry.name, target.error));
+        continue;
+      }
+      if (target.kind !== 'dir') continue;
     }
+    const skillFile = join(entryPath, 'SKILL.md');
+    const probe = await probePath(skillFile);
+    if (probe.kind === 'error') {
+      components.push(unreadable('skill', entry.name, probe.error));
+      continue;
+    }
+    if (probe.kind !== 'file') continue;
+    // Unreadable and malformed components are passed through deliberately.
+    components.push(await loadComponent('skill', entry.name, skillFile));
   }
 
   const agentsDir = join(pluginRoot, 'agents');
-  if (await dirExists(agentsDir)) {
-    const agents = await fs.readdir(agentsDir, { withFileTypes: true });
-    for (const entry of agents) {
-      if (!entry.isFile() || !entry.name.endsWith('.md')) continue;
-      const name = entry.name.replace(/\.md$/, '');
-      components.push(await loadComponent('agent', name, join(agentsDir, entry.name)));
+  for (const entry of await readTree('agent', agentsDir, 'agents/', components)) {
+    if (!entry.name.endsWith('.md')) continue;
+    const name = entry.name.replace(/\.md$/, '');
+    const entryPath = join(agentsDir, entry.name);
+    if (!entry.isFile()) {
+      if (!entry.isSymbolicLink()) continue;
+      const target = await probePath(entryPath);
+      if (target.kind === 'error') {
+        components.push(unreadable('agent', name, target.error));
+        continue;
+      }
+      if (target.kind !== 'file') continue;
     }
+    components.push(await loadComponent('agent', name, entryPath));
   }
 
   return components;
+}
+
+const ABSENT_CODES = new Set(['ENOENT', 'ENOTDIR']);
+
+// Classify a path: 'dir' | 'file' | 'other' | 'absent' | 'error' (with
+// .error). 'absent' means nothing -- not even a dangling link -- is there:
+// Windows reports a dangling link as plain ENOENT from stat, so an ENOENT is
+// confirmed with lstat before it is believed. Every fs call goes through the
+// `fs` promises object (the t.mock.method seam), never a named import.
+async function probePath(path) {
+  try {
+    const s = await fs.stat(path);
+    return { kind: s.isDirectory() ? 'dir' : s.isFile() ? 'file' : 'other' };
+  } catch (err) {
+    if (!ABSENT_CODES.has(err?.code)) return { kind: 'error', error: err };
+    try {
+      await fs.lstat(path);
+    } catch (lerr) {
+      if (ABSENT_CODES.has(lerr?.code)) return { kind: 'absent' };
+      return { kind: 'error', error: lerr };
+    }
+    // lstat succeeded: a dangling link. Report stat's own error.
+    return { kind: 'error', error: err };
+  }
+}
+
+// List a skills/ or agents/ tree. A failure to stat or read the tree itself
+// pushes an unreadable record named by `label` and yields no entries; an
+// absent tree, or one that is not a directory, yields none silently.
+async function readTree(type, dir, label, components) {
+  const probe = await probePath(dir);
+  if (probe.kind === 'error') {
+    components.push(unreadable(type, label, probe.error));
+    return [];
+  }
+  if (probe.kind !== 'dir') return [];
+  try {
+    return await fs.readdir(dir, { withFileTypes: true });
+  } catch (err) {
+    components.push(unreadable(type, label, err));
+    return [];
+  }
+}
+
+// Build the UnreadableComponent record for an I/O failure (readError set).
+function unreadable(type, name, err) {
+  return {
+    type,
+    name,
+    expects: null,
+    frontmatter: null,
+    readError: {
+      code: typeof err?.code === 'string' ? err.code : null,
+      message: String(err?.message ?? err),
+    },
+  };
 }
 
 export async function loadComponent(type, name, filePath) {
@@ -57,16 +133,7 @@ export async function loadComponent(type, name, filePath) {
   try {
     content = await fs.readFile(filePath, 'utf8');
   } catch (err) {
-    return {
-      type,
-      name,
-      expects: null,
-      frontmatter: null,
-      readError: {
-        code: typeof err?.code === 'string' ? err.code : null,
-        message: String(err?.message ?? err),
-      },
-    };
+    return unreadable(type, name, err);
   }
   const parsed = readFrontmatter(content);
   if (!parsed) return { type, name, expects: null, frontmatter: null };

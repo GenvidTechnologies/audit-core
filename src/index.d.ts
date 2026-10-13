@@ -63,6 +63,15 @@ export interface MalformedComponent {
   parseError: ComponentParseError;
 }
 export type Component = ReadableComponent | UnreadableComponent | MalformedComponent;
+// Symlinked skill directories (including Windows junctions) and symlinked
+// agent `.md` files are followed and loaded like their targets. A stat failure
+// other than absence on a component's file, or a dangling link, yields an
+// UnreadableComponent with `readError` (a dangling link carries stat's own
+// code, 'ENOENT' for a missing target). A skills/ or agents/ tree that can't be
+// stat'd or read yields an UnreadableComponent named 'skills/' or 'agents/'
+// (type 'skill' / 'agent'); a tree that is absent or not a directory is
+// silently empty. The walk never throws, apart from the
+// TypeError for a non-string `pluginRoot`.
 export declare function walkComponents(pluginRoot: string): Promise<Component[]>;
 export declare function loadComponent(type: ComponentType, name: string, filePath: string): Promise<Component>;
 

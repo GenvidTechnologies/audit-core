@@ -15,6 +15,27 @@ before. If a past entry itself needs correcting, add a new entry that says
 so; never edit or remove the old one in place. See `wiki/schema.md` for
 the full maintenance schema.
 
+## 2026-10-13
+
+* **Creation**: windows-fs-semantics.md — a reference page of measured Node
+  `fs` behaviour on Windows 11 (Node 24.11.1, Developer Mode, unelevated):
+  `Dirent` answers for links and junctions, dangling links stat `ENOENT`
+  while `lstat` succeeds, a link loop stats `ELOOP`, `icacls` denies, and the
+  `promises.stat` mock seam. States that POSIX behaviour is unmeasured
+  (CI is Linux-only). Backs component-read-error.md. Driven by
+  raw/2026-10-13-windows-fs-probes.md, behind
+  https://github.com/GenvidTechnologies/audit-core/issues/19.
+* **Update**: component-read-error.md — replaced the passage that documented
+  the `fileExists` stat-skip as intended with the corrected behaviour, and
+  added "Walk pre-filters (audit-core#19)": `walkComponents` follows symlinks
+  and junctions, records non-absent `stat` failures and dangling links
+  (confirmed via `lstat`, because Windows reports them as plain `ENOENT`) as
+  `UnreadableComponent`s, and records an unreadable `skills/` or
+  `agents/` tree as a tree-level record rather than a throw (ADR-0057 Q2).
+  `evaluateFile`'s matching flaw is carved out for a separate follow-up issue,
+  https://github.com/GenvidTechnologies/audit-core/issues/20.
+  Driven by https://github.com/GenvidTechnologies/audit-core/issues/19.
+
 ## 2026-10-12
 
 * **Creation**: frontmatter-parse-error.md — a decision-context page recording
