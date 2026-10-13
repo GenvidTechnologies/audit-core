@@ -8,6 +8,7 @@ import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
 
 import { readFrontmatter } from './frontmatter.mjs';
+import { probePath, toProbeError } from './probes.mjs';
 
 export async function walkComponents(pluginRoot) {
   if (typeof pluginRoot !== 'string') {
@@ -29,7 +30,7 @@ export async function walkComponents(pluginRoot) {
         components.push(unreadable('skill', entry.name, target.error));
         continue;
       }
-      if (target.kind !== 'dir') continue;
+      if (target.kind !== 'directory') continue;
     }
     const skillFile = join(entryPath, 'SKILL.md');
     const probe = await probePath(skillFile);
@@ -62,30 +63,6 @@ export async function walkComponents(pluginRoot) {
   return components;
 }
 
-const ABSENT_CODES = new Set(['ENOENT', 'ENOTDIR']);
-
-// Classify a path: 'dir' | 'file' | 'other' | 'absent' | 'error' (with
-// .error). 'absent' means nothing -- not even a dangling link -- is there:
-// Windows reports a dangling link as plain ENOENT from stat, so an ENOENT is
-// confirmed with lstat before it is believed. Every fs call goes through the
-// `fs` promises object (the t.mock.method seam), never a named import.
-async function probePath(path) {
-  try {
-    const s = await fs.stat(path);
-    return { kind: s.isDirectory() ? 'dir' : s.isFile() ? 'file' : 'other' };
-  } catch (err) {
-    if (!ABSENT_CODES.has(err?.code)) return { kind: 'error', error: err };
-    try {
-      await fs.lstat(path);
-    } catch (lerr) {
-      if (ABSENT_CODES.has(lerr?.code)) return { kind: 'absent' };
-      return { kind: 'error', error: lerr };
-    }
-    // lstat succeeded: a dangling link. Report stat's own error.
-    return { kind: 'error', error: err };
-  }
-}
-
 // List a skills/ or agents/ tree. A failure to stat or read the tree itself
 // pushes an unreadable record named by `label` and yields no entries; an
 // absent tree, or one that is not a directory, yields none silently.
@@ -95,7 +72,7 @@ async function readTree(type, dir, label, components) {
     components.push(unreadable(type, label, probe.error));
     return [];
   }
-  if (probe.kind !== 'dir') return [];
+  if (probe.kind !== 'directory') return [];
   try {
     return await fs.readdir(dir, { withFileTypes: true });
   } catch (err) {
@@ -111,10 +88,7 @@ function unreadable(type, name, err) {
     name,
     expects: null,
     frontmatter: null,
-    readError: {
-      code: typeof err?.code === 'string' ? err.code : null,
-      message: String(err?.message ?? err),
-    },
+    readError: toProbeError(err),
   };
 }
 

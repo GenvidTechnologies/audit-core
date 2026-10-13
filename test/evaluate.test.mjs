@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { promises } from 'node:fs';
+import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -343,4 +344,130 @@ test('evaluate: never throws for an expected condition -- returns a finding inst
     const missingToolFinding = evaluateTool(component, { command: 'definitely-not-a-real-command-xyz', reason: 'r' });
     assert.equal(missingToolFinding.ok, false);
   });
+});
+
+// ---------------------------------------------------------------------------
+// #20: evaluateFile reports stat failures, dangling links and wrong kinds
+// ---------------------------------------------------------------------------
+
+async function symlinkOrSkip(t, target, path, type) {
+  try {
+    await promises.symlink(target, path, type);
+    return true;
+  } catch (err) {
+    if (process.platform === 'win32' && err.code === 'EPERM') {
+      t.skip('symlink creation needs privilege on this Windows machine');
+      return false;
+    }
+    throw err;
+  }
+}
+
+function codeError(code) {
+  return Object.assign(new Error(`${code}: mocked`), { code });
+}
+
+function expectedFinding(target, required, detail) {
+  return {
+    kind: 'file', component: 'some-skill', target, ok: false, required,
+    severity: required ? 'error' : 'info', detail, reason: 'r',
+  };
+}
+
+async function evalProbe(probe, target, required, path = join(tmpdir(), 'evaluate-20-unused')) {
+  const entry = required ? { path: target, reason: 'r' } : { path: target, required: false, reason: 'r' };
+  return evaluateFile(component, entry, () => ({ path, probe, target }));
+}
+
+test('evaluateFile (#20): EACCES on a required file', async (t) => {
+  t.mock.method(promises, 'stat', async () => { throw codeError('EACCES'); });
+  const f = await evalProbe('file', 'a.md', true);
+  assert.equal(f.detail, 'file could not be checked (EACCES)');
+  assert.equal(f.severity, 'error');
+  assert.deepEqual(f, expectedFinding('a.md', true, 'file could not be checked (EACCES)'));
+});
+
+test('evaluateFile (#20): EACCES on an optional file', async (t) => {
+  t.mock.method(promises, 'stat', async () => { throw codeError('EACCES'); });
+  const f = await evalProbe('file', 'a.md', false);
+  assert.equal(f.detail, 'file could not be checked (EACCES) (optional)');
+  assert.equal(f.severity, 'info');
+  assert.deepEqual(f, expectedFinding('a.md', false, 'file could not be checked (EACCES) (optional)'));
+});
+
+test('evaluateFile (#20): EACCES on a required directory', async (t) => {
+  t.mock.method(promises, 'stat', async () => { throw codeError('EACCES'); });
+  const f = await evalProbe('directory', 'd/', true);
+  assert.equal(f.detail, 'directory could not be checked (EACCES)');
+  assert.equal(f.severity, 'error');
+  assert.deepEqual(f, expectedFinding('d/', true, 'directory could not be checked (EACCES)'));
+});
+
+test('evaluateFile (#20): EACCES on an optional directory', async (t) => {
+  t.mock.method(promises, 'stat', async () => { throw codeError('EACCES'); });
+  const f = await evalProbe('directory', 'd/', false);
+  assert.equal(f.detail, 'directory could not be checked (EACCES) (optional)');
+  assert.equal(f.severity, 'info');
+  assert.deepEqual(f, expectedFinding('d/', false, 'directory could not be checked (EACCES) (optional)'));
+});
+
+test('evaluateFile (#20): real dangling link on disk', async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), 'evaluate-test-'));
+  try {
+    const link = join(dir, 'dangling.md');
+    if (!(await symlinkOrSkip(t, join(dir, 'nope.md'), link, 'file'))) return;
+    const f = await evalProbe('file', 'dangling.md', true, link);
+    assert.equal(f.detail, 'file could not be checked (dangling link, ENOENT)');
+    assert.deepEqual(f, expectedFinding('dangling.md', true, 'file could not be checked (dangling link, ENOENT)'));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('evaluateFile (#20): mocked dangling link (stat ENOENT, lstat resolves)', async (t) => {
+  t.mock.method(promises, 'stat', async () => { throw codeError('ENOENT'); });
+  t.mock.method(promises, 'lstat', async () => ({ isSymbolicLink: () => true }));
+  const f = await evalProbe('file', 'dangling.md', true);
+  assert.equal(f.detail, 'file could not be checked (dangling link, ENOENT)');
+  assert.deepEqual(f, expectedFinding('dangling.md', true, 'file could not be checked (dangling link, ENOENT)'));
+});
+
+test('evaluateFile (#20): a directory where a file is expected', async () => {
+  await withTempDir(async (dir) => {
+    const sub = join(dir, 'actually-a-dir');
+    await mkdir(sub);
+    const f = await evalProbe('file', 'actually-a-dir', true, sub);
+    assert.equal(f.detail, 'expected a file, found a directory');
+    assert.deepEqual(f, expectedFinding('actually-a-dir', true, 'expected a file, found a directory'));
+  });
+});
+
+test('evaluateFile (#20): a file where an optional directory is expected', async () => {
+  await withTempDir(async (dir) => {
+    const filePath = join(dir, 'actually-a-file.md');
+    await writeFile(filePath, 'hi\n');
+    const f = await evalProbe('directory', 'actually-a-file.md/', false, filePath);
+    assert.equal(f.detail, 'expected a directory, found a file (optional)');
+    assert.deepEqual(f, expectedFinding('actually-a-file.md/', false, 'expected a directory, found a file (optional)'));
+  });
+});
+
+test('evaluateFile (#20): neither a file nor a directory', async (t) => {
+  t.mock.method(promises, 'stat', async () => ({ isFile: () => false, isDirectory: () => false }));
+  const f = await evalProbe('file', 'fifo', true);
+  assert.equal(f.detail, 'expected a file, found neither a file nor a directory');
+  assert.deepEqual(f, expectedFinding('fifo', true, 'expected a file, found neither a file nor a directory'));
+});
+
+test('evaluateFile (#20): never rejects on an unexpected stat failure', async (t) => {
+  const statMock = t.mock.method(promises, 'stat', async () => { throw codeError('ELOOP'); });
+  const loop = await evalProbe('file', 'a.md', true);
+  assert.equal(loop.detail, 'file could not be checked (ELOOP)');
+  assert.deepEqual(loop, expectedFinding('a.md', true, 'file could not be checked (ELOOP)'));
+
+  statMock.mock.restore();
+  t.mock.method(promises, 'stat', async () => { throw 'boom'; });
+  const plain = await evalProbe('file', 'a.md', true);
+  assert.equal(plain.detail, 'file could not be checked (boom)');
+  assert.deepEqual(plain, expectedFinding('a.md', true, 'file could not be checked (boom)'));
 });

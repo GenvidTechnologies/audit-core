@@ -17,6 +17,19 @@ the full maintenance schema.
 
 ## 2026-10-13
 
+* **Creation**: expectation-probe-outcomes.md — decision record for
+  audit-core#20: `probePath` moved into `probes.mjs` and exported (barrel 12 →
+  13 names), `evaluateFile` reports `stat` failures and dangling links as
+  "could not be checked (<code>)" and wrong kinds as "expected a X, found a Y",
+  `fileExists`/`dirExists` stay boolean, and the trailing-separator platform
+  split (Windows stats `file/` as a file; POSIX unmeasured). Driven by
+  raw/2026-10-13-trailing-separator-stat.md, behind
+  https://github.com/GenvidTechnologies/audit-core/issues/20.
+  Authored during a `/gvt-dev:plan-task` run, not a `maintain-wiki ingest`.
+* **Update**: windows-fs-semantics.md — added a trailing-separator section
+  citing the new capture, and rewrote the `evaluateFile` consequence to say it
+  is fixed. component-read-error.md — appended a "Since" pointer to
+  expectation-probe-outcomes.md; its historical text is otherwise unchanged.
 * **Creation**: windows-fs-semantics.md — a reference page of measured Node
   `fs` behaviour on Windows 11 (Node 24.11.1, Developer Mode, unelevated):
   `Dirent` answers for links and junctions, dangling links stat `ENOENT`

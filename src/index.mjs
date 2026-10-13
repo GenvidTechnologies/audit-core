@@ -13,6 +13,6 @@ export const VERSION = '0.3.0';
 
 export { extractFrontmatter, parseYaml } from './frontmatter.mjs';
 export { resolveKey } from './config-resolve.mjs';
-export { fileExists, dirExists, commandExists } from './probes.mjs';
+export { fileExists, dirExists, probePath, commandExists } from './probes.mjs';
 export { walkComponents, loadComponent } from './component-walk.mjs';
 export { evaluateFile, evaluateConfig, evaluateTool } from './evaluate.mjs';

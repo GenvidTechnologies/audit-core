@@ -12,6 +12,10 @@ sources:
     resource: ../raw/2026-10-13-windows-fs-probes.md
     title: Capture of the Windows filesystem probes behind audit-core#19
     last_modified: 2026-10-13
+  - id: raw-trailing
+    resource: ../raw/2026-10-13-trailing-separator-stat.md
+    title: Capture of the Windows trailing-separator stat measurement behind audit-core#20
+    last_modified: 2026-10-13
   - id: issue-19
     resource: https://github.com/GenvidTechnologies/audit-core/issues/19
     title: "walkComponents silently skips components whose stat fails or that are symlinks"
@@ -70,6 +74,21 @@ exactly like a directory symlink.
   dangling `SKILL.md` symlink stats `ENOENT`[^raw-capture].
 - A dangling `skills/` tree (`plugin3`) stats `ENOENT`[^raw-capture].
 
+## Trailing separators
+
+Measured separately, with `fs.statSync` from the repo root on the same machine
+(Node v24.11.1)[^raw-trailing]:
+
+| Path | `stat` |
+| --- | --- |
+| `package.json/` (file, trailing slash) | file |
+| `package.json\` (file, trailing backslash) | file |
+| `src/` (directory, trailing slash) | directory |
+| `nope/` (absent, trailing slash) | `ENOENT` |
+
+So on Windows a trailing separator does not make `stat` fail on a file. POSIX
+is expected to give `ENOTDIR` for `file/`, but that is **not measured**.
+
 ## Permission denies (`icacls`)
 
 | Deny applied | `stat` | `readFile` |
@@ -99,7 +118,8 @@ privilege is likewise unverified.
 
 Not measured, and not assumed by the table above:
 
-- whether a path through a regular file gives `ENOTDIR` on POSIX;
+- whether a path through a regular file, or `file/` with a trailing slash,
+  gives `ENOTDIR` on POSIX;
 - whether the `'junction'` type argument to `symlink` is ignored off Windows;
 - the `ELOOP` code for a link loop on POSIX;
 - `lstat` on a dangling link on POSIX.
@@ -114,11 +134,12 @@ audit-core#19 pull request is the first observation of these. Update this page
   before treating a path as absent, because `stat` alone cannot distinguish a
   dangling link from a missing path. The decision and the full set of walk
   rules are in [Component read-error shape](component-read-error.md).
-- `evaluateFile` has the matching flaw: it reports a non-`ENOENT` `stat`
-  failure as "not found". That is deliberately out of scope for the walk fix
-  and is tracked in audit-core#20[^issue-20]. The injection seam above is the
-  way to test it, since the failure can't be provoked unprivileged on this
-  machine.
+- `evaluateFile` had the matching flaw (a non-`ENOENT` `stat` failure read as
+  "not found"). It is fixed in audit-core#20[^issue-20]: `evaluateFile` now
+  classifies through `probePath`, which reports a `stat` failure or dangling
+  link as "could not be checked". The injection seam above is how it is
+  tested, since the failure can't be provoked unprivileged on this machine.
+  The decision is in [Expectation probe outcomes](expectation-probe-outcomes.md).
 
 ## Related
 
@@ -127,5 +148,6 @@ audit-core#19 pull request is the first observation of these. Update this page
   reasoning.
 
 [^raw-capture]: `raw/2026-10-13-windows-fs-probes.md` (environment, `probe19.mjs`, `probe19b.mjs`, `probe19c.mjs` outputs).
+[^raw-trailing]: `raw/2026-10-13-trailing-separator-stat.md` (Windows 11, Node v24.11.1; POSIX unmeasured).
 [^issue-19]: audit-core#19, https://github.com/GenvidTechnologies/audit-core/issues/19.
 [^issue-20]: audit-core#20, https://github.com/GenvidTechnologies/audit-core/issues/20.

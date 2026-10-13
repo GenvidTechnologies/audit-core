@@ -15,7 +15,7 @@ modules (`frontmatter.mjs`, `config-resolve.mjs`, `probes.mjs`,
 whose seam is pinned by ADR-0057 in that repo. The `gvt-dev` plugin now
 consumes this package and has deleted its own copies
 ([#458](https://github.com/GenvidTechnologies/claude-code-plugin-gvt-dev/issues/458)).
-`README.md`'s API surface section documents the 12-name barrel.
+`README.md`'s API surface section documents the 13-name barrel.
 
 ## Package shape
 
@@ -84,8 +84,9 @@ Keep that deviation when re-syncing a workflow from its template.
 
 The shared gate (`node-gate.yml` upstream) is a single `ubuntu-latest` job
 on Node 22; nothing runs on Windows. So Windows-only filesystem behaviour
-(junctions, a dangling link reporting `ENOENT` from `stat`) is verified only
-on a local Windows run. Say so in the PR, as #19 did.
+(junctions, a dangling link reporting `ENOENT` from `stat`, `stat('file/')`
+reporting a file where POSIX is expected to give `ENOTDIR`) is verified only
+on a local Windows run. Say so in the PR, as #19 and #20 did.
 
 ## Releasing
 
@@ -140,6 +141,11 @@ Title follows the commit subject convention above. The body states what
 changed, why, and how it was verified — name the commands actually run
 (`npm run lint`, `npm run typecheck`, `npm test`), not a generic claim that
 checks pass.
+
+A PR that resolves its issue carries `Closes #N` in the body even when that
+issue's release row is still `[not-yet-due]` (#17, #18, #21 and #22 all did).
+The release row is ticked by hand after `/gvt-dev:release-npm-package` runs,
+so there's no need to hold the keyword back.
 
 ## Branching
 
