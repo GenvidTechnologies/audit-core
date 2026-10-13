@@ -97,7 +97,10 @@ export async function loadComponent(type, name, filePath) {
   // rather than rejecting. The filePath TypeError is the caller-contract
   // exception (gvt-dev ADR-0057 Q2). A parse failure likewise resolves to a
   // malformed component (parseError set, frontmatter null); parse handling
-  // stays outside the try (GenvidTechnologies/audit-core#4).
+  // stays outside the try (GenvidTechnologies/audit-core#4). A file with no
+  // frontmatter block at all is malformed too (code NO_FRONTMATTER): every
+  // component needs one, and a bare null record would pass the audit
+  // silently (GenvidTechnologies/audit-core#23).
   if (typeof filePath !== 'string') {
     throw new TypeError(
       `loadComponent: filePath must be a string (component file path), got ${typeof filePath}`,
@@ -110,7 +113,18 @@ export async function loadComponent(type, name, filePath) {
     return unreadable(type, name, err);
   }
   const parsed = readFrontmatter(content);
-  if (!parsed) return { type, name, expects: null, frontmatter: null };
+  if (!parsed) {
+    return {
+      type,
+      name,
+      expects: null,
+      frontmatter: null,
+      parseError: {
+        code: 'NO_FRONTMATTER',
+        message: 'no frontmatter block: the file must open with a --- line, closed by another --- line',
+      },
+    };
+  }
   if (parsed.error) {
     return { type, name, expects: null, frontmatter: null, parseError: parsed.error };
   }
