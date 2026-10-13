@@ -28,6 +28,10 @@ sources:
     resource: https://github.com/GenvidTechnologies/audit-core/issues/23
     title: "audit-core#23 — flag components with no frontmatter block"
     last_modified: 2026-10-13
+  - id: probes-23
+    resource: ../raw/2026-10-13-no-frontmatter-corpus-probe.md
+    title: Capture of the no-frontmatter corpus probe and mutation evidence
+    last_modified: 2026-10-13
 ---
 
 # Malformed-frontmatter parse error
@@ -139,8 +143,10 @@ fails it at the root step; both already sit outside yaml's own codes.
 decision above keeps: `null` already means "no frontmatter block".
 
 **Corpus inventory.** Walking gvt-dev at `ef5560c` (32 components) and
-gvt-construct3 at `60d6b22` (6 components) newly flags 0 of 38. The flag fires
-only on a future broken file.
+gvt-construct3 at `60d6b22` (6 components) newly flags 0 of 38[^probes-23]. The
+flag fires only on a future broken file. Check the walked total before reading
+a zero: `walkComponents` treats a missing tree as empty, so a probe pointed at
+the wrong root reports 0 of 0.
 
 **Deferred.** Narrowing `ReadableComponent.frontmatter` to non-null. No
 `loadComponent` path yields a readable `frontmatter: null` any more, but
@@ -164,3 +170,4 @@ capture[^probes] and on the issue[^evidence-comment].
 [^probes]: [raw/2026-10-12-yaml-frontmatter-swap-probes.md](../raw/2026-10-12-yaml-frontmatter-swap-probes.md).
 [^c3-151]: gvt-construct3#151.
 [^issue-23]: audit-core#23, https://github.com/GenvidTechnologies/audit-core/issues/23.
+[^probes-23]: [raw/2026-10-13-no-frontmatter-corpus-probe.md](../raw/2026-10-13-no-frontmatter-corpus-probe.md).

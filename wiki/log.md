@@ -17,6 +17,11 @@ the full maintenance schema.
 
 ## 2026-10-13
 
+* **Ingest**: raw/2026-10-13-no-frontmatter-corpus-probe.md — the corpus probe
+  (verbatim), its output, and the M0-M4 mutation evidence behind audit-core#23.
+  It also records one run that walked 0 components because the root was
+  wrong. Cited from frontmatter-parse-error.md's corpus inventory, which now
+  says to check the walked total before trusting a zero.
 * **Update**: frontmatter-parse-error.md — added a "No frontmatter block"
   section for audit-core#23: `loadComponent` flags a component with no
   frontmatter block as a `MalformedComponent` with `parseError.code`
