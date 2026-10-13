@@ -8,28 +8,47 @@
 // `evaluateFile`'s resolve also reports which probe to run (`file` vs.
 // `directory`) -- that probe choice is policy, not mechanism, per the same
 // verdict -- and the returned noun is rendered verbatim into `detail`
-// (ADR-0057 verdict C). None of the three evaluators throw for an expected
-// condition -- a missing file/directory, an unreadable or malformed config,
-// an unresolvable key, or a command absent from PATH all return a finding
-// (ADR-0057 Q2).
+// (ADR-0057 verdict C). `evaluateFile` probes with `probePath` and reports
+// three distinct failures: absent -> "<probe> not found"; unexaminable (a
+// stat error, or a dangling link) -> "<probe> could not be checked (...)";
+// wrong kind -> "expected a <probe>, found ...". None of the three evaluators
+// throw for an expected condition -- a missing or unexaminable file/directory,
+// an unreadable or malformed config, an unresolvable key, or a command absent
+// from PATH all return a finding (ADR-0057 Q2).
 
 import { promises as fs } from 'node:fs';
 
-import { fileExists, dirExists, commandExists } from './probes.mjs';
+import { probePath, ABSENT_CODES, commandExists } from './probes.mjs';
 import { resolveKey } from './config-resolve.mjs';
 
 export async function evaluateFile(component, entry, resolve) {
   const required = entry.required !== false;
   const { path, probe, target } = resolve(entry);
-  const exists = probe === 'directory' ? await dirExists(path) : await fileExists(path);
+  const want = probe === 'directory' ? 'directory' : 'file';
+  const found = await probePath(path);
 
-  if (exists) {
+  if (found.kind === want) {
     return { kind: 'file', component: component.name, target, ok: true, required };
+  }
+
+  let detail;
+  if (found.kind === 'absent') {
+    detail = `${probe} not found`;
+  } else if (found.kind === 'error') {
+    const why = found.error.code ?? found.error.message;
+    // probePath reports an absence code inside 'error' only for a dangling link.
+    detail = ABSENT_CODES.has(found.error.code)
+      ? `${probe} could not be checked (dangling link, ${why})`
+      : `${probe} could not be checked (${why})`;
+  } else {
+    detail = found.kind === 'other'
+      ? `expected a ${probe}, found neither a file nor a directory`
+      : `expected a ${probe}, found a ${found.kind}`;
   }
   return {
     kind: 'file', component: component.name, target, ok: false, required,
     severity: required ? 'error' : 'info',
-    detail: `${probe} not found${required ? '' : ' (optional)'}`,
+    detail: detail + (required ? '' : ' (optional)'),
     reason: entry.reason,
   };
 }
