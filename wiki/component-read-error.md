@@ -136,7 +136,7 @@ anything[^issue-19]. The walk now classifies paths itself:
   own code (`'ENOENT'` for a missing target); if not, it is absent.
 - **`fileExists`/`dirExists` are unchanged**, as is `evaluateFile`, which has
   the same flaw (a non-ENOENT `stat` failure reads as "not found"). That is
-  deliberately left for a separate follow-up issue.
+  deliberately left for a separate follow-up issue, audit-core#20[^issue-20].
 
 Consumers that skip on `!c.expects` will drop these new records, as with the
 earlier ones; the CHANGELOG repeats the warning.
@@ -155,3 +155,4 @@ posted on the issue[^mutation-evidence].
 [^issue-5]: audit-core#5, including the `EBUSY` reproduction.
 [^mutation-evidence]: Mutation evidence comment on audit-core#5.
 [^issue-19]: audit-core#19, https://github.com/GenvidTechnologies/audit-core/issues/19.
+[^issue-20]: audit-core#20, https://github.com/GenvidTechnologies/audit-core/issues/20.

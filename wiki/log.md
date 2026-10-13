@@ -24,7 +24,8 @@ the full maintenance schema.
   (confirmed via `lstat`, because Windows reports them as plain `ENOENT`) as
   `UnreadableComponent`s, and records an unreadable `skills/` or
   `agents/` tree as a tree-level record rather than a throw (ADR-0057 Q2).
-  `evaluateFile`'s matching flaw is carved out for a separate follow-up issue.
+  `evaluateFile`'s matching flaw is carved out for a separate follow-up issue,
+  https://github.com/GenvidTechnologies/audit-core/issues/20.
   Driven by https://github.com/GenvidTechnologies/audit-core/issues/19.
 
 ## 2026-10-12
