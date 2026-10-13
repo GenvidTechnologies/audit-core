@@ -42,8 +42,9 @@ file where a directory was expected was indistinguishable from absence.
 renamed `'directory'`, and the error is normalised to
 `{ code: string | null, message }` by `toProbeError`, which the walk's
 `unreadable()` now shares. `ABSENT_CODES` is `{ENOENT, ENOTDIR}`. `evaluateFile`
-now consumes it (377aca7), and `probePath` plus the types `PathProbe` and
-`PathProbeError` join the barrel, taking it from 12 names to 13. Tests are
+now consumes it (377aca7), and `probePath` joins the barrel, taking it from 12
+names to 13 (636f396). The types `PathProbe` and `PathProbeError` are declared
+in `index.d.ts` only and add no runtime name. Tests are
 aa3ba6e (probe outcomes and error normalisation) and 5621301 (`evaluateFile`
 outcomes for unreadable and wrong-kind paths).
 
@@ -98,7 +99,10 @@ argument; see [Component read-error shape](component-read-error.md).
   is unknown. The wording claims only what was learned.
 - **The code, not `err.message`.** Node's message embeds the absolute path, which
   would make reports machine-specific. `evaluateConfig`'s
-  `unreadable (${err.message})` precedent was deliberately not followed.
+  `unreadable (${err.message})` precedent was deliberately not followed. The
+  message is used only when there is no string code, which in practice means
+  a thrown non-`Error`; Node's own `fs` errors always carry a code. That
+  fallback can still leak whatever the thrown value says, path included.
 - **Severity and the ` (optional)` suffix are unchanged.** Only the detail text
   moves.
 - **Wrong kind gets its own message.** A file where a directory is expected, or
