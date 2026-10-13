@@ -1,7 +1,7 @@
 ---
 type: decision-context
 title: Malformed-frontmatter parse error
-description: Why a component whose frontmatter yaml rejects resolves to a MalformedComponent with parseError while the string API returns {} and never throws, rather than returning {} alone or falling back to the hand-rolled parser, and what that obliges consumers to do.
+description: Why a component whose frontmatter yaml rejects, or that has no frontmatter block, resolves to a MalformedComponent with parseError while the string API never throws, rather than returning {} alone or falling back to the hand-rolled parser, and what that obliges consumers to do.
 tags: [api, typescript, decision, audit-core]
 status: stable
 stale_after: 2027-10-12
@@ -24,6 +24,10 @@ sources:
     resource: https://github.com/GenvidTechnologies/claude-code-plugin-gvt-construct3/issues/151
     title: "gvt-construct3#151 — create-c3-op reason is cut at a ' #89' comment"
     last_modified: 2026-10-12
+  - id: issue-23
+    resource: https://github.com/GenvidTechnologies/audit-core/issues/23
+    title: "audit-core#23 — flag components with no frontmatter block"
+    last_modified: 2026-10-13
 ---
 
 # Malformed-frontmatter parse error
@@ -92,6 +96,58 @@ not re-decide that.
 As with `readError`, a consumer that skips components with `expects: null`
 silently skips malformed ones too. It must handle `parseError`.
 
+## No frontmatter block (audit-core#23)
+
+A component file with no frontmatter block used to come back as the bare
+four-key record (`expects: null, frontmatter: null`, no flag), which the
+aggregate audit cannot tell from a component that declares nothing[^issue-23].
+`loadComponent` now resolves it to a `MalformedComponent` with
+`parseError: { code: 'NO_FRONTMATTER', message }`. The type is unchanged and
+the barrel stays at 13 names. The newly flagged inputs are: no fence, an empty
+file, adjacent fences (`---\n---`), a UTF-8 BOM before the fence, a leading
+blank line, and an unclosed fence. `---\n\n---` and comment-only blocks stay
+readable with `{}`, a valid block without `metadata.expects` keeps its four
+keys, and `extractFrontmatter` still returns `null` for no block;
+`src/frontmatter.mjs` is untouched. A test pins the invariant: `loadComponent`
+yields `NO_FRONTMATTER` exactly when `extractFrontmatter` returns `null` over
+the same bytes, because both go through the one `readFrontmatter`.
+
+**Chosen: A, reuse `parseError` with code `NO_FRONTMATTER`.** Every consumer
+that already handles `parseError` handles this case with no change.
+
+**B. A fourth union member** (for example `UnframedComponent` with
+`missingFrontmatter: true`, or a `frontmatterError` field). Rejected:
+gvt-construct3's shipped `evaluateComponentLoad`
+(`plugin/skills/audit-c3-conventions/scripts/lib/audit.mjs`) returns null for
+it, and gvt-dev's planned branch in
+GenvidTechnologies/claude-code-plugin-gvt-dev#648 misses it. The case would
+stay silent in every consumer until each adopts the new field, which is the
+defect being fixed.
+
+**C. A discriminant on every member** (`status: 'ok' | 'unreadable' |
+'malformed' | 'unframed'`). Rejected: a breaking restructure of a shape three
+consumers already narrow with `in`, and it reopens the C′ decision on
+[Component read-error shape](component-read-error.md).
+
+"Parse error" for an absent block is defensible. The file fails the component
+grammar (fence, YAML mapping, fence) at the fence step, as `NOT_A_MAPPING`
+fails it at the root step; both already sit outside yaml's own codes.
+
+**Accepted inconsistency.** `---\n---` is flagged while `---\n\n---` reads as
+`{}`. Widening the frontmatter regex would change the string API
+(`extractFrontmatter('---\n---\n')` going from `null` to `{}`), which the
+decision above keeps: `null` already means "no frontmatter block".
+
+**Corpus inventory.** Walking gvt-dev at `ef5560c` (32 components) and
+gvt-construct3 at `60d6b22` (6 components) newly flags 0 of 38. The flag fires
+only on a future broken file.
+
+**Deferred.** Narrowing `ReadableComponent.frontmatter` to non-null. No
+`loadComponent` path yields a readable `frontmatter: null` any more, but
+`Component` is also the evaluators' input type, and hand-built literals in
+`test/signature.test.mjs` would stop type-checking. That is a typing change
+for consumers, outside #23.
+
 ## Evidence
 
 Differential and edge-case probes, and the mutation rows M1-M5 with the commit
@@ -107,3 +163,4 @@ capture[^probes] and on the issue[^evidence-comment].
 [^evidence-comment]: Mutation and differential evidence comment on audit-core#4.
 [^probes]: [raw/2026-10-12-yaml-frontmatter-swap-probes.md](../raw/2026-10-12-yaml-frontmatter-swap-probes.md).
 [^c3-151]: gvt-construct3#151.
+[^issue-23]: audit-core#23, https://github.com/GenvidTechnologies/audit-core/issues/23.
