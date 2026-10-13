@@ -69,8 +69,10 @@ The package barrel (`src/index.mjs`) re-exports 12 names.
 ### Probes
 
 - `fileExists(path: string): Promise<boolean>` — true only for a regular
-  file (a directory at that path returns `false`).
-- `dirExists(path: string): Promise<boolean>` — true only for a directory.
+  file (a directory at that path returns `false`). It returns `false` on any
+  `stat` failure, not only absence.
+- `dirExists(path: string): Promise<boolean>` — true only for a directory;
+  likewise `false` on any `stat` failure.
 - `commandExists(cmd: string): boolean` — synchronous; shells out to
   `where`/`which` depending on platform.
 
@@ -79,11 +81,19 @@ The package barrel (`src/index.mjs`) re-exports 12 names.
 - `walkComponents(pluginRoot: string): Promise<Component[]>` — walks
   `pluginRoot/skills/*/SKILL.md` and `pluginRoot/agents/*.md`, loading each
   component's frontmatter. Skips entries that don't match the expected shape
-  rather than throwing. A component file that is found but then can't be
+  rather than throwing. Symlinks are followed: a symlinked skill directory
+  (including a Windows junction) or a symlinked agent `.md` file loads like
+  its target, and a link to a non-component shape is skipped like the real
+  shape would be. A component file that is found but then can't be
   read is neither skipped nor thrown: it is passed through as an
-  `UnreadableComponent` carrying `readError`. Likewise a file whose
+  `UnreadableComponent` carrying `readError`. That includes a non-absent
+  `stat` failure on a component file and a dangling link (`readError.code`
+  `'ENOENT'`). A `skills/` or `agents/` tree that can't be stat'd or listed
+  yields one `UnreadableComponent` named `'skills/'` or `'agents/'`; an
+  absent tree is still silently empty. Likewise a file whose
   frontmatter does not parse is passed through as a `MalformedComponent`
-  carrying `parseError`.
+  carrying `parseError`. The only throw is the `TypeError` for a non-string
+  `pluginRoot`.
 - `loadComponent(type: ComponentType, name: string, filePath: string): Promise<Component>` —
   reads and parses one component's frontmatter into a `Component` record
   (`{ type, name, expects, frontmatter }`). It never rejects for an I/O
