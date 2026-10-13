@@ -42,6 +42,20 @@ export async function walkComponents(pluginRoot) {
   return components;
 }
 
+// Build the UnreadableComponent record for an I/O failure (readError set).
+function unreadable(type, name, err) {
+  return {
+    type,
+    name,
+    expects: null,
+    frontmatter: null,
+    readError: {
+      code: typeof err?.code === 'string' ? err.code : null,
+      message: String(err?.message ?? err),
+    },
+  };
+}
+
 export async function loadComponent(type, name, filePath) {
   // An I/O failure resolves to an unreadable component (readError set)
   // rather than rejecting. The filePath TypeError is the caller-contract
@@ -57,16 +71,7 @@ export async function loadComponent(type, name, filePath) {
   try {
     content = await fs.readFile(filePath, 'utf8');
   } catch (err) {
-    return {
-      type,
-      name,
-      expects: null,
-      frontmatter: null,
-      readError: {
-        code: typeof err?.code === 'string' ? err.code : null,
-        message: String(err?.message ?? err),
-      },
-    };
+    return unreadable(type, name, err);
   }
   const parsed = readFrontmatter(content);
   if (!parsed) return { type, name, expects: null, frontmatter: null };
