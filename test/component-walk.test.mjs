@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 
 import { walkComponents, loadComponent } from '../src/component-walk.mjs';
+import { extractFrontmatter } from '../src/frontmatter.mjs';
 
 // Note: the gvt-dev original of this file carries an 8th case -- a
 // descriptionLengthOf/descriptionLength differential against gvt-dev's own 32
@@ -102,19 +103,103 @@ test('walkComponents: a missing agents/ directory is tolerated (returns only ski
   }
 });
 
-test('loadComponent: a file with no frontmatter yields {expects: null, frontmatter: null}', async () => {
+const MASKED = '<masked>';
+
+function maskParseMessage(r) {
+  return { ...r, parseError: { ...r.parseError, message: MASKED } };
+}
+
+test('loadComponent: a file with no frontmatter block is flagged parseError NO_FRONTMATTER', async () => {
   const dir = await withTempRepo(async (d) => {
     await writeRepoFile(d, 'skills/plain/SKILL.md', 'no frontmatter here\n');
   });
   try {
     const component = await loadComponent('skill', 'plain', join(dir, 'skills', 'plain', 'SKILL.md'));
-    assert.deepEqual(component, { type: 'skill', name: 'plain', expects: null, frontmatter: null });
+    assert.deepEqual(maskParseMessage(component), {
+      type: 'skill',
+      name: 'plain',
+      expects: null,
+      frontmatter: null,
+      parseError: { code: 'NO_FRONTMATTER', message: MASKED },
+    });
+    assert.equal(typeof component.parseError.message, 'string');
+    assert.notEqual(component.parseError.message, '');
+    assert.ok(!component.parseError.message.includes('\n'));
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
 });
 
-const MASKED = '<masked>';
+test('walkComponents: a no-frontmatter agent carries parseError NO_FRONTMATTER; a good skill has none', async () => {
+  const dir = await withTempRepo(async (d) => {
+    await writeRepoFile(d, 'skills/good/SKILL.md', '---\nname: good\ndescription: x\n---\nbody\n');
+    await writeRepoFile(d, 'agents/bare.md', 'no frontmatter here\n');
+  });
+  try {
+    const components = await walkComponents(dir);
+    const good = components.find((c) => c.name === 'good');
+    const bare = components.find((c) => c.name === 'bare');
+    assert.equal(bare.parseError.code, 'NO_FRONTMATTER');
+    assert.equal('parseError' in good, false);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('loadComponent: NO_FRONTMATTER agrees with extractFrontmatter === null across edge-case sources', async () => {
+  const flagged = [
+    ['no fence', 'just text\n'],
+    ['empty file', ''],
+    ['adjacent fences', '---\n---\n'],
+    ['BOM before fence', '\uFEFF---\na: 1\n---\n'],
+    ['leading blank line', '\n---\na: 1\n---\n'],
+    ['unclosed fence', '---\na: 1\n'],
+    ['CRLF leading blank line', '\r\n---\r\na: 1\r\n---\r\n'],
+  ];
+  const clean = [
+    ['blank line between fences', '---\n\n---\n'],
+    ['comment-only block', '---\n# only a comment\n---\n'],
+    ['valid block', '---\na: 1\n---\nbody\n'],
+    ['CRLF valid block', '---\r\na: 1\r\n---\r\nbody\r\n'],
+  ];
+  const dir = await withTempRepo(async () => {});
+  try {
+    for (const [label, src] of [...flagged, ...clean]) {
+      await writeRepoFile(dir, `skills/${label.replace(/ /g, '-')}/SKILL.md`, src);
+    }
+    for (const [label, src] of flagged) {
+      const path = join(dir, 'skills', label.replace(/ /g, '-'), 'SKILL.md');
+      const c = await loadComponent('skill', label, path);
+      assert.equal(extractFrontmatter(src), null, `extractFrontmatter null: ${label}`);
+      assert.equal(c.parseError?.code, 'NO_FRONTMATTER', `loadComponent code: ${label}`);
+    }
+    for (const [label, src] of clean) {
+      const path = join(dir, 'skills', label.replace(/ /g, '-'), 'SKILL.md');
+      const c = await loadComponent('skill', label, path);
+      assert.notEqual(extractFrontmatter(src), null, `extractFrontmatter non-null: ${label}`);
+      assert.equal('parseError' in c, false, `no parseError: ${label}`);
+    }
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('loadComponent: a file with valid frontmatter and no metadata.expects yields exactly four keys', async () => {
+  const dir = await withTempRepo(async (d) => {
+    await writeRepoFile(d, 'skills/ok/SKILL.md', '---\nname: x\ndescription: y\n---\nbody\n');
+  });
+  try {
+    const component = await loadComponent('skill', 'ok', join(dir, 'skills', 'ok', 'SKILL.md'));
+    assert.deepEqual(component, {
+      type: 'skill',
+      name: 'ok',
+      expects: null,
+      frontmatter: { name: 'x', description: 'y' },
+    });
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
 
 function maskMessage(r) {
   return { ...r, readError: { ...r.readError, message: MASKED } };

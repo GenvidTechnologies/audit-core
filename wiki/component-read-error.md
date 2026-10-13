@@ -24,6 +24,10 @@ sources:
     resource: https://github.com/GenvidTechnologies/audit-core/issues/20
     title: "audit-core#20 — evaluateFile reports a non-ENOENT stat failure as \"not found\""
     last_modified: 2026-10-13
+  - id: issue-23
+    resource: https://github.com/GenvidTechnologies/audit-core/issues/23
+    title: "audit-core#23 — flag components with no frontmatter block"
+    last_modified: 2026-10-13
 ---
 
 # Component read-error shape
@@ -115,6 +119,11 @@ frontmatter (audit-core#4) would get a sibling union member, for example
 `parseError`, with the same `expects: null, frontmatter: null` defaults,
 rather than overloading `readError`.
 
+*Since:* audit-core#23 superseded the no-frontmatter clause[^issue-23]: a file
+with no frontmatter block now resolves to a `MalformedComponent` with
+`parseError.code` `NO_FRONTMATTER`. See
+[Malformed-frontmatter parse error](frontmatter-parse-error.md).
+
 ## Walk pre-filters (audit-core#19)
 
 `walkComponents` used to pre-filter entries with `fileExists`/`dirExists`,
@@ -162,3 +171,4 @@ posted on the issue[^mutation-evidence].
 [^mutation-evidence]: Mutation evidence comment on audit-core#5.
 [^issue-19]: audit-core#19, https://github.com/GenvidTechnologies/audit-core/issues/19.
 [^issue-20]: audit-core#20, https://github.com/GenvidTechnologies/audit-core/issues/20.
+[^issue-23]: audit-core#23, https://github.com/GenvidTechnologies/audit-core/issues/23.

@@ -84,4 +84,4 @@ directory.
 
 * [Expectation probe outcomes](expectation-probe-outcomes.md) - Why evaluateFile classifies a path through an exported probePath that returns a discriminated union, keeps fileExists/dirExists boolean, and says "could not be checked" for stat failures rather than "not found", plus the trailing-separator platform split.
 
-* [Malformed-frontmatter parse error](frontmatter-parse-error.md) - Why a component whose frontmatter yaml rejects resolves to a MalformedComponent with parseError while the string API returns {} and never throws, rather than returning {} alone or falling back to the hand-rolled parser, and what that obliges consumers to do.
+* [Malformed-frontmatter parse error](frontmatter-parse-error.md) - Why a component whose frontmatter yaml rejects, or that has no frontmatter block, resolves to a MalformedComponent with parseError while the string API never throws, rather than returning {} alone or falling back to the hand-rolled parser, and what that obliges consumers to do.

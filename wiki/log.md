@@ -17,6 +17,22 @@ the full maintenance schema.
 
 ## 2026-10-13
 
+* **Ingest**: raw/2026-10-13-no-frontmatter-corpus-probe.md — the corpus probe
+  (verbatim), its output, and the M0-M4 mutation evidence behind audit-core#23.
+  It also records one run that walked 0 components because the root was
+  wrong. Cited from frontmatter-parse-error.md's corpus inventory, which now
+  says to check the walked total before trusting a zero.
+* **Update**: frontmatter-parse-error.md — added a "No frontmatter block"
+  section for audit-core#23: `loadComponent` flags a component with no
+  frontmatter block as a `MalformedComponent` with `parseError.code`
+  `NO_FRONTMATTER` (option A, reusing `parseError`), with the rejected
+  fourth-member and per-member-discriminant options, the accepted
+  adjacent-fence inconsistency, the 0-of-38 corpus inventory and the deferred
+  non-null narrowing; `description` and its index entry broadened to match.
+  component-read-error.md — appended a "Since" note to the audit-core#4
+  pre-commitment; its original sentence is unchanged. Authored during a
+  `/gvt-dev:plan-task` run, not a `maintain-wiki ingest`; behind
+  https://github.com/GenvidTechnologies/audit-core/issues/23.
 * **Creation**: expectation-probe-outcomes.md — decision record for
   audit-core#20: `probePath` moved into `probes.mjs` and exported (barrel 12 →
   13 names), `evaluateFile` reports `stat` failures and dangling links as

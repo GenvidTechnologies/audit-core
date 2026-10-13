@@ -19,6 +19,19 @@ While the package is at `0.x`, a breaking change to the public API takes a
 
 ### Fixed
 
+- Consumer-visible: `loadComponent` (and so `walkComponents`) now flags a
+  component that has no frontmatter block with `parseError` code
+  `NO_FRONTMATTER`, returning a `MalformedComponent` where it used to return
+  the bare four-key shape with no flag. This covers a file with no `---`
+  fence, an empty file, adjacent fences with nothing between, a UTF-8 BOM
+  before the fence, a leading blank line, and an unclosed fence. A block with
+  a blank line between the fences, or comments only, is still readable with
+  `{}`. A consumer that branches on `'parseError' in c` surfaces these with no
+  change. A consumer that only checks `expects` still skips them silently,
+  because `expects` stays `null` on a `MalformedComponent`. `extractFrontmatter`
+  still returns `null` for no block
+  ([GenvidTechnologies/audit-core#23](https://github.com/GenvidTechnologies/audit-core/issues/23)).
+
 - Consumer-visible: the `detail` text of an unsatisfied `evaluateFile`
   finding changes. Every unsatisfied path used to read `<probe> not found`,
   which told the user to create something that might already exist. Absence
