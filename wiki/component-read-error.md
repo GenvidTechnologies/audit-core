@@ -16,6 +16,10 @@ sources:
     resource: https://github.com/GenvidTechnologies/audit-core/issues/5#issuecomment-6127018087
     title: Mutation evidence for the read-error behaviour, posted on audit-core#5
     last_modified: 2026-10-12
+  - id: issue-19
+    resource: https://github.com/GenvidTechnologies/audit-core/issues/19
+    title: "audit-core#19 — walkComponents silently skips components whose stat fails or that are symlinks"
+    last_modified: 2026-10-13
 ---
 
 # Component read-error shape
@@ -43,11 +47,9 @@ The return type stays `Promise<Component>`. On a successful read `readError`
 is **absent** (not `undefined`), so the readable record keeps exactly its four
 keys. TypeScript callers narrow with `'readError' in c`. When `walkComponents`
 finds a component file and then fails to read it, it passes that component
-through rather than rejecting or skipping it. The skills branch still checks
-`SKILL.md` with `fileExists` first. That check returns `false` on any `stat`
-error, so a skill whose file can't even be stat'd is still skipped as absent.
-Read failures such as `EBUSY` and `EACCES` don't block `stat`, so they reach
-the pass-through.
+through rather than rejecting or skipping it. That covers a `stat` failure
+on the component file as well as a read failure such as `EBUSY` or `EACCES`;
+only genuine absence is skipped. See "Walk pre-filters (audit-core#19)" below.
 
 ## Options considered
 
@@ -109,6 +111,35 @@ frontmatter (audit-core#4) would get a sibling union member, for example
 `parseError`, with the same `expects: null, frontmatter: null` defaults,
 rather than overloading `readError`.
 
+## Walk pre-filters (audit-core#19)
+
+`walkComponents` used to pre-filter entries with `fileExists`/`dirExists`,
+which return `false` on any `stat` failure. That reintroduced the silent skip
+this page argues against, one step before `loadComponent` could report
+anything[^issue-19]. The walk now classifies paths itself:
+
+- **Links are followed.** A symlinked skill directory (including a Windows
+  junction) or a symlinked agent `.md` file loads like its target. A link to
+  a non-component shape is skipped like the real shape.
+- **Non-absent `stat` failures are records.** A failure on a component file
+  yields an `UnreadableComponent` with `readError`; only ENOENT/ENOTDIR is
+  treated as absence.
+- **Tree-level record, not a throw.** A `skills/` or `agents/` tree that
+  can't be stat'd or listed (including a `readdir` failure) yields an
+  `UnreadableComponent` named `'skills/'` or `'agents/'`. A throw would fail
+  the whole walk, and ADR-0057 Q2 permits only the caller-contract
+  `TypeError`. An absent tree still yields nothing.
+- **Dangling link = `ENOENT`, via `lstat`.** Windows reports a dangling link
+  as plain `ENOENT` from `stat`, indistinguishable from absence. An `ENOENT`
+  is therefore confirmed with `lstat`: if the link itself exists, the
+  component is unreadable with code `'ENOENT'`; if not, it is absent.
+- **`fileExists`/`dirExists` are unchanged**, as is `evaluateFile`, which has
+  the same flaw (a non-ENOENT `stat` failure reads as "not found"). That is
+  deliberately left for a separate follow-up issue.
+
+Consumers that skip on `!c.expects` will drop these new records, as with the
+earlier ones; the CHANGELOG repeats the warning.
+
 ## Evidence
 
 The `EBUSY` lock probe is described above and in the issue[^issue-5]. The
@@ -122,3 +153,4 @@ posted on the issue[^mutation-evidence].
 
 [^issue-5]: audit-core#5, including the `EBUSY` reproduction.
 [^mutation-evidence]: Mutation evidence comment on audit-core#5.
+[^issue-19]: audit-core#19, https://github.com/GenvidTechnologies/audit-core/issues/19.
