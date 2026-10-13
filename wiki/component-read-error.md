@@ -141,6 +141,8 @@ anything[^issue-19]. The walk now classifies paths itself:
 - **`fileExists`/`dirExists` are unchanged**, as is `evaluateFile`, which has
   the same flaw (a non-ENOENT `stat` failure reads as "not found"). That is
   deliberately left for a separate follow-up issue, audit-core#20[^issue-20].
+  *Since:* audit-core#20 fixed it; `evaluateFile` now classifies through the
+  exported `probePath`. See [Expectation probe outcomes](expectation-probe-outcomes.md).
 
 Consumers that skip on `!c.expects` will drop these new records, as with the
 earlier ones; the CHANGELOG repeats the warning.

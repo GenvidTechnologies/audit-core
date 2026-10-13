@@ -29,7 +29,7 @@ links escape `wiki/`, so an OKF consumer that receives the bundle alone
 can't follow them (see the schema's wiki-links section):
 
 * [`README.md`](../README.md) - What the package is, its shape, the API
-  surface (the 12 exports the barrel re-exports, grouped by module), and how
+  surface (the 13 exports the barrel re-exports, grouped by module), and how
   consumers import it.
 * [`CLAUDE.md`](../CLAUDE.md) - Project context for Claude Code: package
   shape, commands, CI deviation, the release process, and
@@ -81,5 +81,7 @@ directory.
   package, and how it retires itself.
 
 * [Component read-error shape](component-read-error.md) - Why loadComponent resolves an unreadable file to an UnreadableComponent with readError, rather than reusing frontmatter null, returning null, or wrapping the result, and what that obliges consumers to do.
+
+* [Expectation probe outcomes](expectation-probe-outcomes.md) - Why evaluateFile classifies a path through an exported probePath that returns a discriminated union, keeps fileExists/dirExists boolean, and says "could not be checked" for stat failures rather than "not found", plus the trailing-separator platform split.
 
 * [Malformed-frontmatter parse error](frontmatter-parse-error.md) - Why a component whose frontmatter yaml rejects resolves to a MalformedComponent with parseError while the string API returns {} and never throws, rather than returning {} alone or falling back to the hand-rolled parser, and what that obliges consumers to do.
