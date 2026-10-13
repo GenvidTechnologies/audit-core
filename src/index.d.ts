@@ -44,9 +44,13 @@ export interface ExpectsToolEntry   { command: string; required?: boolean; reaso
 export interface Expects { files?: ExpectsFileEntry[]; config?: ExpectsConfigEntry[]; tools?: ExpectsToolEntry[] }
 // `readError` and `parseError` each exist only on their own branch: on a
 // readable component both are ABSENT, not undefined, so it keeps exactly its
-// four keys. `parseError` marks frontmatter the `yaml` parser rejected, or
-// whose root is not a mapping (`code` is yaml's error code, `NOT_A_MAPPING`, or
-// `YAML_EXCEPTION` when yaml throws, e.g. on an unresolved alias).
+// four keys. `parseError` marks a file with no frontmatter block, or
+// frontmatter the `yaml` parser rejected, or whose root is not a mapping
+// (`code` is `NO_FRONTMATTER`, yaml's error code, `NOT_A_MAPPING`, or
+// `YAML_EXCEPTION` when yaml throws, e.g. on an unresolved alias). A file has
+// no block when it doesn't open with a `---` line closed by another `---`
+// line: no fence, an empty file, a BOM or blank line before the fence, an
+// unclosed fence, or adjacent fences with nothing between.
 // Narrow with `'readError' in c` / `'parseError' in c`.
 export interface ReadableComponent {
   type: ComponentType;

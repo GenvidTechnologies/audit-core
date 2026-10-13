@@ -104,20 +104,23 @@ The package barrel (`src/index.mjs`) re-exports 13 names.
   `agents/` tree that can't be stat'd or listed yields one
   `UnreadableComponent` named `'skills/'` or `'agents/'`; a tree that is
   absent or not a directory is still silently empty. Likewise a file whose
-  frontmatter does not parse is passed through as a `MalformedComponent`
-  carrying `parseError`. The only throw is the `TypeError` for a non-string
-  `pluginRoot`.
+  frontmatter does not parse, or that has no frontmatter block at all
+  (`parseError.code` `NO_FRONTMATTER`), is passed through as a
+  `MalformedComponent` carrying `parseError`. The only throw is the
+  `TypeError` for a non-string `pluginRoot`.
 - `loadComponent(type: ComponentType, name: string, filePath: string): Promise<Component>` —
   reads and parses one component's frontmatter into a `Component` record
   (`{ type, name, expects, frontmatter }`). It never rejects for an I/O
   failure: an unreadable file resolves to an `UnreadableComponent`
   (`expects: null`, `frontmatter: null`, `readError: { code, message }`, where
-  `code` is the Node error code or `null`). A file whose frontmatter yaml
-  rejects, whose root is not a mapping, or on which yaml throws resolves to a
-  `MalformedComponent` (`expects: null`, `frontmatter: null`,
-  `parseError: { code, message }`, where `code` is yaml's error code,
-  `NOT_A_MAPPING` or `YAML_EXCEPTION`). Narrow with `'readError' in c` and
-  `'parseError' in c`. `Component` is
+  `code` is the Node error code or `null`). A file with no frontmatter block
+  (no opening `---` line, an empty file, a BOM or blank line before the
+  fence, an unclosed fence, or adjacent fences with nothing between), whose
+  frontmatter yaml rejects, whose root is not a mapping, or on which yaml
+  throws resolves to a `MalformedComponent` (`expects: null`,
+  `frontmatter: null`, `parseError: { code, message }`, where `code` is
+  `NO_FRONTMATTER`, yaml's error code, `NOT_A_MAPPING` or `YAML_EXCEPTION`).
+  Narrow with `'readError' in c` and `'parseError' in c`. `Component` is
   `ReadableComponent | UnreadableComponent | MalformedComponent`; the
   supporting types `ComponentReadError` and `ComponentParseError` are
   exported too. It throws `TypeError` for a non-string `filePath`.
@@ -150,7 +153,8 @@ unreadable or malformed config, an unresolvable key, or a command absent
 from `PATH`) — each returns a finding instead. The loaders
 follow the same rule for I/O and for parsing: a file that can't be read
 becomes a `readError` on the returned component, and one whose frontmatter
-doesn't parse becomes a `parseError`, not a rejection. Both leave
+doesn't parse, or that has no frontmatter block (`NO_FRONTMATTER`), becomes a
+`parseError`, not a rejection. Both leave
 `expects: null`, so check for them before skipping on a null `expects`.
 
 ## The caller supplies path resolution
