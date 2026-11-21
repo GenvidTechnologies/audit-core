@@ -17,6 +17,21 @@ consumes this package and has deleted its own copies
 ([#458](https://github.com/GenvidTechnologies/claude-code-plugin-gvt-dev/issues/458)).
 `README.md`'s API surface section documents the 13-name barrel.
 
+## Scope boundary
+
+What belongs in this package is set by two accepted gvt-dev records, not by
+this repo. ADR-0049 draws the mechanism/policy line: mechanism lives here,
+and policy stays in each plugin. It names path resolution "a **policy hook
+the plugin supplies**". ADR-0057 verdict A makes the trailing-slash directory
+marker policy too. `src/evaluate.mjs` and the README section "The caller
+supplies path resolution" follow both.
+
+So a proposal to move path resolution here (a `paths` override lookup, a
+derived default, `prefer` candidates, the trailing-slash kind rule) first
+needs a gvt-dev record that amends ADR-0049 and ADR-0057. Read both records
+before filing or planning such a move. GenvidTechnologies/audit-core#25 is
+the open proposal of this kind.
+
 ## Package shape
 
 No-build, plain-`.mjs` ESM. Sources ship as written — there is no TypeScript
