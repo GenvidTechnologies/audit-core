@@ -15,6 +15,16 @@ before. If a past entry itself needs correcting, add a new entry that says
 so; never edit or remove the old one in place. See `wiki/schema.md` for
 the full maintenance schema.
 
+## 2026-11-21
+
+* **Update**: process/issue-triage.md — the Mutation recipes section now
+  matches the gvt-dev 5.2.0 flat template. "Set category" removes only the
+  other category labels (`{otherTypes}`); the old form listed the added label
+  in its own remove list, so the add and the remove cancelled. "Comment" and
+  "Create split issue" take their text from `{tmpfile}` through `--body-file`.
+  A "Close as completed or not planned" recipe and the label-readback
+  sentence are added. Found while triaging audit-core#25.
+
 ## 2026-10-13
 
 * **Ingest**: raw/2026-10-13-no-frontmatter-corpus-probe.md — the corpus probe
