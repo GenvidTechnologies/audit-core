@@ -32,6 +32,21 @@ needs a gvt-dev record that amends ADR-0049 and ADR-0057. Read both records
 before filing or planning such a move. GenvidTechnologies/audit-core#25 is
 the open proposal of this kind.
 
+The records are in `wiki/decisions/audit-core/` of
+GenvidTechnologies/claude-code-plugin-gvt-dev. They set three more limits,
+which apply to any other audit code proposed for this package (a load-failure
+report, a check of the `metadata.expects` shape). A proposal that crosses one
+needs the same amending record first:
+
+- The library sets no exit code. ADR-0057 Q2 and ADR-0076 put the exit code
+  on each plugin's entrypoint.
+- The library emits no `diagnostic`-class finding (ADR-0049), and report
+  rendering is policy. An export returns plain records; the caller sets the
+  wording, the severity and the finding kind.
+- The library names no plugin's expectation kind or field. ADR-0057 Q5
+  declines the `mcp` kind. A check that depends on the sections or fields of
+  `metadata.expects` takes them from the caller.
+
 ## Package shape
 
 No-build, plain-`.mjs` ESM. Sources ship as written — there is no TypeScript
